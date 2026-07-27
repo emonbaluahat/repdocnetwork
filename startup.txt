@@ -1,0 +1,900 @@
+# STARTUP PLAN — RepDoc Network
+
+## VISION
+RepDoc Network is an operating system for Computer Shops, Digital Service Centers, Document Professionals, and Remote Operators in Bangladesh. It combines document generation, CRM, shop management, marketplace, wallet, community, and hiring into one ecosystem.
+
+---
+
+## PHASE OVERVIEW (5 Phases, ~18 Months to V1 Market Fit)
+
+| Phase | Name | Duration | Outcome |
+|-------|------|----------|---------|
+| 0 | Foundation (Existing) | Done | prottoyon.gov.bd clone + admin panel + Bangla cert generation |
+| 1 | Core SaaS (DocOS Base) | Months 1-4 | Multi-tenant shop platform with CRM + Document Engine v2 |
+| 2 | Marketplace & Community | Months 5-8 | Service marketplace, shop-to-shop, remote operators, community |
+| 3 | Wallet & Monetization | Months 9-12 | Wallet, escrow, template/plugin marketplaces, analytics |
+| 4 | Advanced Features | Months 13-16 | Hiring portal, AI, mobile app, desktop app, multi-language |
+| 5 | Scale & Ecosystem | Months 17-24+ | Elastic scale, API marketplace, global expansion, enterprise |
+
+---
+
+## TECH STACK
+
+| Layer | Technology | Rationale |
+|-------|-----------|-----------|
+| Backend | PHP 8.3 (Custom MVC) | Full control, no framework overhead, easy to hire in BD |
+| Frontend | HTML + CSS + JavaScript (Vanilla JS with Composable architecture) | Lightweight, no build step, PHP templates render server-side |
+| Template Engine | PHP (plain includes/requires or custom lightweight) | Avoids Blade/Twig dependency, keeps it simple |
+| Database | MySQL 8 | Reliable, widely supported, excellent for structured data |
+| PDF | Dompdf / mPDF | PHP-native, supports Bangla/Unicode via font embedding |
+| Queue | MySQL-based job table + cron | Simple, no extra services needed initially |
+| Search | MySQL FULLTEXT indexes | Good enough for Phase 1-2, no extra infrastructure |
+| Cache | File-based or MySQL query cache | Minimal dependencies for V1 |
+| File Storage | Local filesystem + MySQL metadata | Upgrade to cloud backup in Phase 3 |
+| Real-time Chat | AJAX polling (short-interval) | Works without WebSockets, upgrade later |
+| CSS Framework | Tailwind CSS (via CDN or compile-once) | Stripe/Linear aesthetic without JS framework |
+| JS Utilities | Alpine.js or vanilla JS modules | Lightweight interactivity without React |
+| Auth | PHP session-based + password_hash (bcrypt) | Simple, proven, secure |
+| Deployment | LAMP stack (Linux + Apache/Nginx + MySQL + PHP) | Standard BD hosting, no Docker needed |
+| Monitoring | Custom error logging + Uptime monitoring | Start simple
+
+---
+
+## PHASE 0: BASELINE (Already Complete)
+
+### What Exists
+- Clone of prottoyon.gov.bd
+- Admin panel for managing the system
+- Certificate generation in Bangla
+- Basic user management
+
+### What to Keep
+- Certificate generation logic (core business value)
+- Admin panel patterns (reference for new admin design)
+- Bangla text rendering approach
+
+### What to Replace/Drop
+- Monolithic architecture → multi-tenant SaaS
+- Old admin panel → new Stripe/Linear-style dashboard
+- Single-user model → role-based multi-user (Owner, Operator, Admin, Customer)
+- Direct file storage → organized file management with cloud backup
+
+---
+
+## PHASE 1: CORE SAAS — DocOS Base (Months 1-4)
+
+### Month 1: Foundation & Multi-Tenancy
+
+#### Task 1.1: Project Setup
+- Create PHP project structure (MVC pattern: controllers/, models/, views/, core/, config/)
+- Set up MySQL database and user
+- Create .htaccess / Nginx config for URL rewriting
+- Define project coding standards and file naming conventions
+- Set up Git repository + .gitignore
+- Deploy staging environment (Apache/Nginx + PHP + MySQL)
+
+#### Task 1.2: Multi-Tenant Architecture
+```
+shops (tenant container)
+  ├── id, name, slug, domain, status, verified_at
+  ├── settings (JSON): theme, locale, timezone, features
+  ├── subscription: plan, expires_at
+  └── config: logo, address, phone, email
+
+users (shared, but scoped to shop via pivot)
+  ├── id, name, email, phone, password
+  ├── pivot: shop_id, role (owner/admin/operator/customer)
+  └── profile: avatar, signature, preferences
+```
+- Each shop gets its own subdomain (shop1.repdoc.com)
+- All queries scoped by `shop_id` via a base model or query builder helper
+- Roles: ShopOwner, Admin, Operator, Customer
+- Seed a demo shop for development
+
+#### Task 1.3: Authentication & RBAC
+- Login/Register (email + phone OTP for Bangladesh)
+- Shop selector (if user belongs to multiple shops)
+- Role-based permissions (CRUD per module per role)
+- Permission inheritance: Owner > Admin > Operator > Customer
+- Invite system (shop owners invite operators via email/phone)
+- Passwordless OTP login for customers (SMS via Twilio/BD provider)
+
+#### Database Tables: Auth & Users
+```sql
+users (id, name, email, phone, password, avatar, preferences, created_at)
+shop_user (shop_id, user_id, role, joined_at, invited_by)
+permissions (id, name, slug, module)
+role_permission (role, permission_id) -- mapping
+login_tokens (id, user_id, token, expires_at, used_at)
+sessions (id, user_id, shop_id, ip, user_agent, last_activity)
+```
+
+### Month 2: Customer CRM & Document Engine
+
+#### Task 2.1: Customer CRM
+- **Customer CRUD**: Add, edit, delete, search customers within a shop
+- **Customer Fields**: Name, phone, email, address, NID, photo, notes, tags, custom fields
+- **Customer Timeline**: Every action logged (document created, order placed, note added)
+- **Document History**: All documents ever generated for this customer
+- **Smart Search**: Search by name, phone, NID, document number — universal search bar
+- **Tags & Groups**: Tag customers (e.g., "Premium", "Student", "Regular") for filtering
+- **Import/Export**: CSV import/export for customer lists
+- **Duplicate Detection**: Phone number and NID deduplication
+
+#### Database Tables: CRM
+```sql
+customers (id, shop_id, name, phone, email, address, nid, photo, notes, tags, metadata, created_at, updated_at)
+customer_timeline (id, customer_id, shop_id, user_id, action, description, metadata, created_at)
+```
+
+#### Task 2.2: Document Engine v2
+The most critical module. Must handle Bangla + English text with perfect formatting.
+
+- **Template System** (Admin/Super-admin creates templates)
+  - Templates stored as HTML/PHP fragments with placeholder variables
+  - Variables system: `{customer_name}`, `{date}`, `{certificate_no}`
+  - Conditional blocks: `{if gender==male} his {else} her {/if}`
+  - Dynamic tables, signatures, QR codes, photos
+
+- **Document Generation**
+  - Accept template ID + field values
+  - Render template HTML with substituted variables
+  - Convert HTML to PDF using Dompdf or mPDF (PHP-native, good Bangla support)
+  - Generate DOCX simultaneously using PHPWord for editable versions
+  - Optional: Email PDF to customer directly (PHP mailer or PHPMailer)
+  - Heavy generation queued via MySQL jobs table + cron (user gets notification when ready)
+
+- **Document Types** (initial)
+  - Character Certificate
+  - Birth Certificate
+  - Income Certificate
+  - Student Certificate
+  - Land Ownership Certificate (khotian)
+  - Trade License
+  - NID Copy
+  - Custom/blank certificates
+  - Each type has its own field set and template
+
+- **Document Management**
+  - List all generated documents (shop-wide)
+  - Filter by date, type, customer, operator
+  - Re-download anytime
+  - Cancel/void a document
+  - Regenerate with corrections
+  - Document references (unique alphanumeric codes for tracking)
+
+#### Database Tables: Documents
+```sql
+document_templates (id, shop_id|nullable, name, slug, type, content_structure, variables, thumbnail, is_active, created_at)
+documents (id, shop_id, customer_id, created_by, template_id, reference_no, fields_data, status, pdf_path, docx_path, generated_at, voided_at)
+document_history (id, document_id, user_id, action, metadata, created_at)
+```
+
+### Month 3: Shop Dashboard & Admin Panel
+
+#### Task 3.1: Shop Dashboard
+Each shop owner sees this when logging in:
+
+- **Today's Summary**: Documents created today, customers added, revenue today (if wallet active)
+- **Quick Actions**: New Document, New Customer, Search Customer
+- **Recent Documents**: Last 10 documents with status
+- **Pending Queue**: Documents being processed / failed
+- **Customer Quick Search**: Universal search bar (CMD+K)
+- **Notifications**: Recent notifications bell
+
+#### Task 3.2: Shop Settings
+- Profile (name, address, logo, cover, contact info)
+- Business hours
+- Operators management (add/remove operators, set permissions)
+- Document types enabled/disabled
+- Default template per document type
+- Invoice/letterhead customization
+- Backup settings (auto/manual)
+- Subscription & billing info
+- API keys (for future plugin access)
+
+#### Task 3.3: Admin Panel (Platform-Wide)
+Super-admin dashboard for managing the entire platform:
+
+- **Shops Management**: List all shops, approve/reject, verify, suspend
+- **Users Management**: All platform users, roles, activity
+- **Template Management**: Create/edit/approve global templates
+- **Document Types**: Define available document types platform-wide
+- **System Settings**: Locale, default language, registration settings
+- **Reports**: Platform-wide usage, revenue, active shops
+- **Support**: Ticket management or issue inbox
+
+### Month 4: Navigation, UI Shell & File Management
+
+#### Task 4.1: UI Shell (Desktop-First)
+Inspired by Linear + VS Code + Stripe:
+
+- **Layout**: Left sidebar (main navigation) + top bar (search, notifications, profile) + main content area
+- **Sidebar**: Collapsible, icon+label, sections: Dashboard, Customers, Documents, Templates, Reports, Settings
+- **Command Palette** (CMD+K or CTRL+K): Universal search — search customers, documents, settings, actions
+- **Keyboard Shortcuts**: Every action has a shortcut (CTRL+N = new document, CTRL+F = search)
+- **Dark Mode / Light Mode**: System preference detection + manual toggle
+- **Responsive**: Desktop-first, but tablet/mobile usable for basic tasks
+- **Loading States**: Skeleton screens, optimistic updates
+- **Empty States**: Helpful illustrations when no data
+
+#### Task 4.2: Navigation Structure
+```
+Dashboard
+├── Overview
+├── Quick Actions
+└── Recent Activity
+
+Customers
+├── All Customers
+├── Add Customer
+├── Import Customers
+└── Tags & Groups
+
+Documents
+├── New Document
+├── All Documents
+├── By Customer
+├── Types
+└── Templates
+
+Reports
+├── Daily Report
+├── Customer Report
+├── Document Report
+└── Operator Report
+
+Settings
+├── Shop Profile
+├── Operators
+├── Templates
+├── Backup
+└── Subscription
+```
+
+#### Task 4.3: File Management
+- All generated PDFs and DOCX stored organized by shop → date → document
+- Cloud backup to S3-compatible storage (DigitalOcean Spaces)
+- Auto-backup daily (configurable)
+- Manual one-click backup
+- File retention policy (configurable: 30 days, 90 days, 1 year, forever)
+- Bandwidth-limited for previews
+- Signed URLs for secure document sharing
+
+#### Task 4.4: Deployment (End of Month 4)
+- Production server setup (VPS: DigitalOcean, Hostinger, or local BD provider)
+- LAMP stack: Apache/Nginx + PHP 8.3 + MySQL 8
+- SSL via Certbot (Let's Encrypt)
+- Backup strategy: daily mysqldump + file backup to cloud storage
+- Monitoring: custom error log dashboard + Uptime Kuma
+- Deploy via Git pull + symlink (simple, reliable)
+
+### PHASE 1 DELIVERABLE
+A working multi-tenant SaaS platform where:
+- A shop owner signs up
+- Creates their shop profile
+- Adds operators
+- Registers customers
+- Generates Bangla certificates for them
+- Sees document history
+- Everything looks like Stripe/Linear, not a traditional ERP
+
+---
+
+## PHASE 2: MARKETPLACE & COMMUNITY (Months 5-8)
+
+### Month 5: Service Marketplace
+
+#### Task 5.1: Service Listings
+- Shops list their services (e.g., "Character Certificate in 1 hour — 50 Taka")
+- Each service: title, description, price, delivery time, category, sample images
+- Categories: Certificates, Applications, Affidavits, Notary, Translations, Forms, Other
+- Service status: active/inactive/draft
+- Shops can set operating hours per service
+
+#### Task 5.2: Customer-Facing Storefront
+- Public shop page: `shop.repdoc.com` — shows services, shop info, reviews
+- Customers browse services without signing up
+- Order flow: Select service → Fill form → Pay (later, via wallet) → Receive document
+- Order tracking for customers (status: pending, processing, completed, delivered)
+- Review system: Customers rate shops after delivery (1-5 stars + comment)
+
+#### Database Tables: Marketplace
+```sql
+services (id, shop_id, name, description, price, delivery_time, category, images, is_active, created_at)
+orders (id, shop_id, customer_id, service_id, status, fields_data, total, commission, created_at, completed_at)
+reviews (id, order_id, shop_id, customer_id, rating, comment, created_at)
+```
+
+### Month 6: Shop-to-Shop & Remote Operators
+
+#### Task 6.1: Shop-to-Shop Job Sharing
+- Shop A receives an order it cannot fulfill (too busy, out of scope)
+- Shop A posts it as a "shared job" visible to other shops
+- Shop B accepts the job, fulfills it, delivers to Shop A
+- Shop A marks it complete for the customer
+- Commission split: platform takes %, Shop A gets %, Shop B gets %
+- Trust system: each shop has a "completion rate" score
+
+#### Task 6.2: Remote Operators
+- Operators register on the platform with skills & experience
+- Shops can hire remote operators for specific tasks
+- Operators work remotely, generate documents under the shop's name
+- Shop reviews operator's work before delivering to customer
+- Payment: operator paid per document or hourly (via wallet, Phase 3)
+- Operator dashboard: see assigned work, submit documents, track earnings
+
+#### Database Tables: Sharing & Operators
+```sql
+shared_jobs (id, from_shop_id, to_shop_id|nullable, order_id, status, commission_split, created_at)
+job_bids (id, shared_job_id, shop_id, bid_amount, message, status, created_at)
+
+remote_operators (id, user_id, skills, experience, rating, is_verified, created_at)
+operator_assignments (id, shop_id, operator_id, order_id|nullable, start_date, end_date, rate_type, rate_amount, status)
+```
+
+### Month 7: Community & Knowledge Base
+
+#### Task 7.1: Community Platform
+- Forum-style community: categories, topics, replies
+- Categories: Tips & Tricks, Document Help, Technical Issues, General Discussion
+- Shops can ask questions, share templates, discuss government document changes
+- Official announcements from platform team
+- Upvote system for useful answers
+- User reputation based on helpful posts
+
+#### Task 7.2: Knowledge Base
+- Structured documentation for shop owners
+  - How to use the platform (guides)
+  - How to generate each document type
+  - Troubleshooting common issues
+  - Template creation guide
+  - Best practices
+- Searchable, categorized, with images/videos
+- Version-controlled (updated as platform evolves)
+
+### Month 8: Chat System & Notification System
+
+#### Task 8.1: Realtime Chat
+- Shop ↔ Customer chat (per order, for communication)
+- Shop ↔ Operator chat (internal, per assignment)
+- Shop ↔ Shop chat (for job sharing negotiation)
+- Admin ↔ Shop chat (support)
+- Real-time via AJAX polling (every 5-10 seconds, upgrade to WebSockets later)
+- Message history, file attachments, read receipts
+- Mobile-friendly chat UI
+
+#### Task 8.2: Notification System
+- **Channels**: In-app (bell icon), Email, SMS (for critical updates)
+- **Events**: New order, order completed, new review, new shared job, job accepted, payment received, document generated
+- **Preferences**: Per user, per channel, per event type
+- **Templates**: Editable notification templates (for each channel)
+- **Batch**: Digest mode for non-urgent notifications (daily/weekly summary)
+
+#### Database Tables: Chat & Notifications
+```sql
+conversations (id, type: order/operator/shop/support, shop_id, customer_id|nullable, order_id|nullable, created_at)
+messages (id, conversation_id, sender_id, message, attachment, read_at, created_at)
+notifications (id, user_id, shop_id, type, title, body, data, read_at, created_at)
+notification_preferences (id, user_id, channel, event, enabled)
+```
+
+---
+
+## PHASE 3: WALLET & MONETIZATION (Months 9-12)
+
+### Month 9: Wallet System
+
+#### Task 9.1: Wallet Architecture
+- Each user has a wallet (balance)
+- Each shop has a business wallet (shared among shop owners)
+- Transactions: credit (deposit, payment received, refund) and debit (payment sent, withdrawal)
+- Deposit methods: bKash, Nagad, Rocket, bank transfer, card (via SSLCommerz or ShurjoPay)
+- Withdrawal: Request withdrawal → Admin approves → Sent to bank/MFS
+- Transaction history with filters (date, type, status)
+- Daily/monthly statements (PDF export)
+
+#### Database Tables: Wallet
+```sql
+wallets (id, owner_type: user/shop, owner_id, balance, created_at, updated_at)
+transactions (id, wallet_id, type: credit/debit, amount, balance_before, balance_after, description, reference_type, reference_id, status: pending/completed/failed, created_at)
+deposits (id, wallet_id, amount, method, gateway_txn_id, status, created_at)
+withdrawals (id, wallet_id, amount, method, account_number, status, approved_by, processed_at)
+```
+
+### Month 10: Escrow & Payment Flows
+
+#### Task 10.1: Escrow System
+- When customer orders a service, payment goes to escrow (not directly to shop)
+- Shop fulfills order, customer confirms receipt
+- Escrow releases payment to shop wallet
+- Dispute: if customer doesn't confirm in 48 hours, auto-release
+- Customer can open dispute → Admin reviews → Escrow decides
+- Escrow fee: small percentage (e.g., 1%) for dispute protection
+
+#### Task 10.2: Payment Integration
+- **bKash Merchant API** (primary, ~80% of BD digital payments)
+- **Nagad Merchant API**
+- **SSLCommerz** (cards, internet banking)
+- **ShurjoPay** (alternative gateway)
+- Optional: Cash on delivery (shop collects cash, platform records)
+
+### Month 11: Template & Plugin Marketplace
+
+#### Task 11.1: Template Marketplace
+- Creators design document templates
+- List them on marketplace for a price (free/paid)
+- Other shops purchase and use them
+- Revenue split: 70% creator, 30% platform
+- Template preview (generate sample PDF before purchase)
+- Ratings and reviews for templates
+- Categories, search, filtering
+
+#### Task 11.2: Plugin Marketplace (Foundation)
+- Plugin concept: extend platform functionality
+- Examples: SMS marketing plugin, WhatsApp notification plugin, custom template builder, advanced reporting
+- Plugin API: define hooks/events that plugins can listen to
+- Plugin store: browse, install, enable/disable per shop
+- Revenue split: 70% developer, 30% platform
+- Plugin SDK documentation (for developers)
+
+### Month 12: Reports, Analytics & Pricing
+
+#### Task 12.1: Business Reports
+- **Daily Report**: documents generated, customers added, revenue
+- **Operator Report**: per-operator performance (documents, time, errors)
+- **Service Report**: popular services, revenue per service
+- **Customer Report**: top customers, repeat customers, acquisition source
+- **Financial Report**: daily/weekly/monthly income, expenses, profit
+- **Tax Report**: applicable taxes (VAT, income tax) per transaction
+- Export all reports as PDF/CSV/Excel
+
+#### Task 12.2: Platform Analytics (Admin)
+- Total shops, active shops, new shops (trend)
+- Total documents generated (per day/week/month)
+- Total revenue, platform commission earned
+- Marketplace activity (orders, job shares)
+- User growth, operator growth
+- Churn rate (shops leaving)
+- Top performing shops, services, templates
+
+#### Task 12.3: Pricing & Subscription Model
+- **Free Tier**: 1 shop, 2 operators, 50 documents/month, basic templates
+- **Starter** ($9/month): 1 shop, 5 operators, 500 documents, templates, reports
+- **Professional** ($25/month): 1 shop, unlimited operators, unlimited docs, marketplace, advanced reports
+- **Enterprise** ($49/month): Multiple shops, custom templates, API access, priority support
+- All tiers: per-document fee applies for marketplace orders (platform commission: 5-10%)
+- Marketplace commission: 10% on service orders, 30% on template sales, 30% on plugin sales
+
+---
+
+## PHASE 4: ADVANCED FEATURES (Months 13-16)
+
+### Month 13: Hiring Portal
+- Job board: Shops post jobs for operators (full-time/part-time/contract)
+- Operators apply with profile, experience, sample work
+- Shop reviews applications, interviews via chat, hires
+- Platform handles contracting basics (offer letter, acceptance)
+- Ratings: shops rate operators, operators rate shops (mutual)
+- Revenue: job posting fee or percentage of first month salary
+
+### Month 14: AI Integration
+- **Document Auto-Fill**: AI extracts data from scanned NID/passport and fills document fields
+- **Smart Suggestions**: Based on customer history, suggest which document they likely need
+- **Content Generation**: Generate professional letter content from brief description
+- **Translation**: Auto-translate document content between Bangla and English
+- **Document Verification**: QR code + verification page (anyone scans QR, sees if document is valid)
+- All AI features optional, opt-in, with usage-based pricing
+
+### Month 15: Mobile App
+- **Customer App** (React Native, Flutter, or PWA)
+  - Browse shops and services
+  - Place orders, upload documents
+  - Track order status
+  - Chat with shop
+  - View/download documents
+  - Pay via bKash/Nagad/wallet
+  - Reviews and ratings
+
+- **Operator App** (React Native, Flutter, or PWA) — Phase 4.5
+  - View assigned tasks
+  - Generate documents on-the-go
+  - Chat with shop, customers
+  - Mark tasks complete
+  - Track daily earnings
+
+### Month 16: Desktop App & Multi-Language
+- **Desktop App** (Electron or Tauri)
+  - For shops that prefer desktop over browser
+  - Offline document generation (sync when online)
+  - System tray notifications
+  - Local file system integration (drag-drop files)
+  - Same UI as web version
+
+- **Multi-Language**
+  - English (default)
+  - Bengali (Bangla) — full interface translation
+  - Language toggle in settings
+  - Simple PHP-based i18n: language files in PHP arrays, switch based on session/cookie
+  - All document generation remains bilingual (Bangla + English content)
+
+### Month 17: Multi-Country Preparation
+- Document types configurable per country
+- Localization of templates (different formats for India, Pakistan, Nepal)
+- Currency support (BDT, INR, PKR, NPR, USD)
+- Payment gateway per country (India: Paytm/UPI, Pakistan: JazzCash, etc.)
+- Legal compliance per country (data residency, document validity)
+
+---
+
+## PHASE 5: SCALE & ECOSYSTEM (Months 17-24+)
+
+### Task 17-18: Elastic Scale
+- Read replicas for PostgreSQL (heavy read load on reports and search)
+- Redis cluster for queues, cache, sessions
+- Laravel Horizon auto-scaling workers
+- CDN for static assets (Cloudflare or BunnyCDN)
+- Database partitioning (by shop_id) for large shops
+- Horizontal scaling: multiple app servers behind load balancer
+
+### Task 19-20: API Marketplace & SDK
+- Public REST API for third-party integration
+- API documentation (Stoplight or similar)
+- Rate limiting per API key
+- Webhook system (notify external services on events)
+- SDK for popular languages (PHP, JavaScript, Python)
+- Partner integrations (e.g., government portal auto-submission)
+
+### Task 21-24: Enterprise & Global
+- SSO/SAML for enterprise shops
+- Audit logs (every action logged, immutable)
+- SLA guarantees (99.9% uptime)
+- Dedicated support channel for enterprise
+- Global expansion marketing (South Asia → Southeast Asia → Africa)
+- Local partnerships per country
+
+---
+
+## ARCHITECTURE DECISIONS
+
+### Custom PHP MVC
+- No heavy framework — lightweight custom MVC keeps full control and zero bloat
+- Structure: `controllers/` handle requests, `models/` handle data, `views/` render HTML
+- Router: single `index.php` entry point with URL rewriting (Apache .htaccess / Nginx config)
+- Autoload: Composer PSR-4 autoloading for classes
+- Middleware pattern: auth check, permission check, CSRF protection applied per route
+
+### Monolith-First, Modular Later
+- Modules separated by folder structure, not services
+- Extract to microservices only when specific modules need independent scaling
+- Proven approach: Basecamp, GitHub, Shopify all started monolithic
+
+### Frontend: Server-Rendered HTML + Vanilla JS
+- Pages rendered server-side via PHP templates (header, content, footer pattern)
+- JavaScript kept minimal and modular — add interactivity only where needed
+- Use Alpine.js for reactive components (dropdowns, modals, toggles) without React
+- Tailwind CSS for styling — compile once, no JS build step
+- AJAX for dynamic updates (search, inline saves, chat) via vanilla fetch()
+
+### PDF Generation Strategy
+- **Dompdf** or **mPDF** — PHP-native PDF generation
+- Embed Bangla fonts (Noto Sans Bengali, Nikosh, or SolaimanLipi) directly in PDF
+- Templates: PHP renders HTML with {variables} substituted, then Dompdf converts to PDF
+- Async generation via MySQL jobs table: background cron picks up pending jobs
+- Fallback: direct sync generation for simple documents (instant download)
+
+### File Storage
+- Local filesystem for development + Phase 1
+- Organized as: `/storage/shops/{shop_id}/documents/{year}/{month}/{filename}.pdf`
+- File metadata stored in MySQL (path, size, type, created_at)
+- Cloud backup via cron (rsync or rclone to cloud storage) in Phase 3
+- Document access: PHP script serves file (not direct URL) for access control
+
+---
+
+## DATABASE OVERVIEW (MySQL — All InnoDB, UTF8MB4)
+
+### Entity Relationship
+```
+Customers ── Documents ── Document_Templates
+    │            │
+    └──── Order ─┤
+         │       │
+    ── Service ──┤
+    │
+    └──── Review
+
+Shops ── Users (pivot: roles)
+  │
+  ├── Services
+  ├── Orders
+  ├── Customers
+  ├── Wallets
+  ├── Templates
+  └── Settings
+
+Wallets ── Transactions ── Deposits / Withdrawals
+
+Conversations ── Messages
+
+Notifications
+
+Community: Topics ── Posts
+```
+
+### Core Tables
+| Table | Purpose |
+|-------|---------|
+| shops | Tenant containers |
+| users | All platform users |
+| shop_user | User-shop membership + role |
+| customers | Shop's customers |
+| document_templates | Document blueprints |
+| documents | Generated documents |
+| services | Marketplace services |
+| orders | Customer orders |
+| reviews | Service reviews |
+| wallets | User/shop balances |
+| transactions | Wallet transactions |
+| conversations | Chat threads |
+| messages | Chat messages |
+| notifications | User notifications |
+| community_topics | Community discussions |
+| community_posts | Discussion replies |
+
+---
+
+## API DESIGN PRINCIPLES
+
+### RESTful API (PHP)
+- Versioned: `/api/v1/...`
+- Authenticated via Bearer tokens (random 64-char tokens stored in MySQL)
+- Rate limited: 60 requests/min per user (1000 for paid plans)
+- Pagination: page-based (page & per_page params)
+- JSON responses with consistent structure
+- Response format:
+```json
+{
+  "data": { ... },
+  "meta": { "current_page": 1, "per_page": 25, "total": 100 },
+  "links": { "first": "...", "last": "...", "prev": null, "next": "..." }
+}
+```
+- Error format:
+```json
+{
+  "message": "Validation failed.",
+  "errors": { "name": ["Name is required"] }
+}
+```
+
+### Key Endpoints
+```
+GET    /api/v1/customers          List customers
+POST   /api/v1/customers          Create customer
+GET    /api/v1/customers/{id}     Get customer
+PUT    /api/v1/customers/{id}     Update customer
+DELETE /api/v1/customers/{id}     Delete customer
+GET    /api/v1/customers/{id}/timeline   Customer timeline
+GET    /api/v1/customers/{id}/documents  Customer documents
+
+GET    /api/v1/documents          List documents
+POST   /api/v1/documents          Generate document
+GET    /api/v1/documents/{id}     Get document details
+GET    /api/v1/documents/{id}/download   Download PDF
+POST   /api/v1/documents/{id}/void       Void document
+POST   /api/v1/documents/{id}/regenerate Regenerate
+
+GET    /api/v1/services           List services
+POST   /api/v1/services           Create service
+GET    /api/v1/services/{id}      Get service details
+POST   /api/v1/orders             Place order
+GET    /api/v1/orders             List orders
+GET    /api/v1/orders/{id}        Order details
+
+GET    /api/v1/wallet             Get wallet balance
+POST   /api/v1/wallet/deposit     Deposit funds
+POST   /api/v1/wallet/withdraw    Request withdrawal
+GET    /api/v1/wallet/transactions List transactions
+
+GET    /api/v1/notifications      List notifications
+POST   /api/v1/notifications/{id}/read  Mark as read
+
+POST   /api/v1/chat/conversations  Start conversation
+GET    /api/v1/chat/conversations  List conversations
+POST   /api/v1/chat/messages       Send message
+```
+
+---
+
+## UI/UX PRINCIPLES
+
+### Design System
+Custom CSS built with Tailwind CSS principles (utility-first), compiled once:
+
+- **Typography**: Inter (headings) + Noto Sans Bengali (Bangla) — clean, modern
+- **Colors**: Primary (deep blue #1E40AF), neutral grays, semantic colors for status
+- **Spacing**: Consistent 4px grid, generous whitespace
+- **Corners**: Slightly rounded (8px cards, 6px buttons)
+- **Shadows**: Subtle (Linear-style)
+- **Animations**: Micro-interactions (hover, focus, loading) — smooth, not flashy
+- **Icons**: Lucide (SVG icon set, drop-in via inline SVG or sprite sheet)
+
+### Component Examples
+- **Customer Table**: Sortable columns, inline search, bulk actions, checkboxes
+- **Document Form**: Dynamic form fields based on template, auto-save (JS), preview
+- **Timeline**: Vertical timeline with icons, expandable entries
+- **Command Palette**: CMD+K overlay (JS), search customers/documents/actions, keyboard nav
+- **Notification Bell**: Dropdown with unread count, mark all read, click to navigate
+- **Stat Cards**: Big numbers, trend indicators, sparkline charts (CSS or simple canvas)
+- **Modal/Drawer**: Slide-in panels for detail views (Alpine.js or vanilla JS)
+
+### Mobile Responsiveness (Phase 4)
+- Sidebar collapses to bottom tab bar
+- Tables become card lists
+- Forms stack vertically
+- Command palette becomes full-screen overlay
+- Touch-friendly targets (min 44px)
+
+---
+
+## SECURITY ARCHITECTURE
+
+### Authentication
+- Password hashing: bcrypt
+- OTP: time-limited (5 min), rate-limited (3 attempts)
+- Session: HTTP-only cookies + XSRF protection for web, tokens for API
+- Failed login: lockout after 5 attempts (15 min)
+
+### Authorization
+- Role-based: each action checks permission
+- Scope-based: operators see only their shop's data
+- Tenant isolation: queries always scoped to `shop_id`
+
+### Data Protection
+- All data encrypted at rest (database encryption + encrypted file storage)
+- TLS everywhere (HTTPS)
+- Environment variables for secrets (never in code)
+- Database backups encrypted before transfer
+- Personal data (NID, address) encrypted in database columns
+
+### File Security
+- Generated documents: signed URLs with expiration (1 hour default)
+- Prevent direct file access (serve through app)
+- Watermark for previews (optional)
+- Virus scanning for uploaded files
+
+### Compliance
+- Bangladesh Data Protection Act compliance
+- Customer consent for data storage
+- Data deletion on shop account closure
+- Audit logging for all sensitive operations
+
+---
+
+## TESTING STRATEGY
+
+### Backend (PHP)
+- **Unit Tests**: PHPUnit — test models, helpers, PDF generation
+- **Integration Tests**: Test API endpoints, authentication, permissions
+- **PDF Tests**: Verify PDF output (file exists, correct content, Bangla renders correctly)
+- Coverage target: 70%+
+
+### Frontend (HTML/CSS/JS)
+- **Manual test checklist**: cross-browser (Chrome, Firefox, Safari), responsive views
+- **JavaScript tests**: Jest or Vitest for utility functions (if complex JS is used)
+- **E2E Tests**: Playwright or Cypress for critical flows (login, create customer, generate document)
+
+### Manual QA (Before Each Release)
+- Smoke test on staging environment
+- Test all CRUD operations
+- Test PDF generation (verify Bangla rendering)
+- Test on Chrome + Firefox + Safari
+- Test mobile responsiveness
+
+---
+
+## DEPLOYMENT & INFRASTRUCTURE
+
+### Phase 1-2: VPS (DigitalOcean or local BD host, $15-30/mo)
+- 2 vCPU, 4GB RAM, 80GB SSD
+- LAMP stack: Apache/Nginx + PHP 8.3 + MySQL 8
+- No Docker — direct server setup (easier for BD hosting environment)
+- Backups: daily mysqldump to remote storage (Google Drive, Dropbox, or Spaces)
+- phpMyAdmin or Adminer for database management
+
+### Phase 3-4: Upgraded VPS / Dedicated
+- 4-8 vCPU, 8-16GB RAM
+- Separate database server (MySQL on its own VPS)
+- 2 app servers with load balancer (HAProxy or Nginx)
+- CDN for static assets (Cloudflare)
+- Read replica for MySQL (reports query from replica)
+
+### Phase 5: Cloud-Native
+- Managed MySQL (DigitalOcean Managed DB or AWS RDS)
+- PHP app behind load balancer (horizontal scaling)
+- Redis for caching and queues (add when needed)
+- Multi-region: Singapore for SEA, Mumbai for India
+
+### Monitoring
+- **Custom error log dashboard**: parse PHP error logs, show in admin panel
+- **MySQL slow query log**: identify performance issues
+- **Server monitoring**: htop, glances, or Netdata
+- **Uptime Kuma**: uptime monitoring
+- **Custom dashboard**: Business KPIs (active shops, documents generated, revenue)
+
+---
+
+## TEAM STRUCTURE
+
+### Phase 1 (4 months): 2-3 people
+| Role | Count | Responsibility |
+|------|-------|----------------|
+| PHP Developer (Lead) | 1 | Backend logic, database, PDF engine, architecture, deployment |
+| PHP/JS Developer | 1 | Frontend views, JavaScript, forms, templates |
+| (optional) UI/UX Designer | 0.5 | Design system, component specs, user testing |
+
+### Phase 2 (4 months): 4-5 people
+Add: 1 PHP Developer, 1 Junior Developer (both stacks)
+
+### Phase 3 (4 months): 6-7 people
+Add: 1 Mobile Developer (React Native or Flutter), 1 QA
+
+### Phase 4-5 (8+ months): 8-12 people
+Add: DevOps, Data Engineer, AI/ML Engineer, Support, BD/Partnerships
+
+---
+
+## RISK & MITIGATION
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|------------|------------|
+| Slow PDF generation under load | High | Medium | Queue system + Browsershot pool + fallback to DomPDF |
+| Government document format changes | High | Medium | Template system (update template, not code); community updates |
+| Payment gateway downtime | High | Medium | Multiple gateways (bKash + Nagad + SSLCommerz); queue + retry |
+| Low shop adoption | High | Medium | Free tier, onboarding support, offline sales team, referral program |
+| Bangla font/rendering issues | Medium | Low | Extensive testing with popular Bangla fonts; browser-based PDF generation |
+| Competition (existing shops) | Medium | High | Focus on underserved digital services; build community moat |
+| Security breach (customer data) | Critical | Low | Encrypted storage, audit logs, regular security audits, limited data retention |
+| Platform fraud (fake orders, fake reviews) | Medium | Medium | Escrow system, phone verification, reputation scores, manual review flags |
+
+---
+
+## KEY MILESTONES & TIMELINE
+
+| Month | Milestone |
+|-------|-----------|
+| M1 | Multi-tenant auth + shop registration working |
+| M2 | Customer CRM + first document generated |
+| M3 | Shop dashboard + admin panel |
+| M4 | **V1 LAUNCH** — Core SaaS platform live |
+| M5 | Service marketplace live |
+| M6 | Shop-to-shop + remote operators |
+| M7 | Community + knowledge base |
+| M8 | Chat + notifications |
+| M9 | Wallet system (deposit/withdraw) |
+| M10 | Escrow + payment integrations |
+| M11 | Template marketplace + plugin foundation |
+| M12 | **V2 LAUNCH** — Full marketplace + wallet |
+| M13 | Hiring portal |
+| M14 | AI features (auto-fill, suggestions) |
+| M15 | Mobile app (customer) |
+| M16 | Desktop app + multi-language |
+| M17 | Multi-country preparation |
+| M18 | **V3 LAUNCH** — Full platform |
+| M19-24 | Scale, API marketplace, enterprise, global expansion |
+
+---
+
+## NORTH STAR METRICS
+
+1. **Documents Generated per Day** — Core value metric
+2. **Active Shops (7-day)** — Platform health
+3. **Marketplace Order Volume** — Ecosystem engagement
+4. **Average Revenue per Shop (MRR)** — Business sustainability
+5. **Customer Retention (90-day)** — Product-market fit
+6. **Net Promoter Score (NPS)** — User satisfaction
+
+---
+
+This plan evolves the existing prottoyon.gov.bd foundation into a full SaaS platform over 5 phases (~24 months). Each phase delivers a working, shippable product. Start with Phase 1, validate with real shops, then iterate.

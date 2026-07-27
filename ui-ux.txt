@@ -1,0 +1,1194 @@
+# UI/UX DESIGN — RepDoc Network
+
+Design philosophy: Stripe + Linear + Notion + Canva + VS Code + Apple.
+No Bootstrap dashboards. No traditional ERP design. Desktop-first, productivity-first.
+
+---
+
+## 1. DESIGN PRINCIPLES
+
+| # | Principle | What it means |
+|---|-----------|---------------|
+| 1 | **Clarity over density** | Every screen has one primary purpose. White space is a feature. |
+| 2 | **Keyboard-first** | Power users never need a mouse. CMD+K, shortcuts, tab navigation. |
+| 3 | **Speed as a feature** | Optimistic UI, skeleton loading, instant search. Every interaction under 100ms perceived. |
+| 4 | **Context everywhere** | Preview panels, slide-in drawers, hover cards. Never lose your place. |
+| 5 | **Bangla-first, English-always** | Bangla is default UI language. English toggle available. Documents bilingual. |
+| 6 | **Progressive disclosure** | Show basics first. Advanced options behind expand/collapse. Don't overwhelm. |
+| 7 | **Offline resilience** | Form data auto-saved. Queue indicator when offline. Nothing lost. |
+| 8 | **Consistent command surface** | Every action accessible via CMD+K. Every page has a command. |
+
+---
+
+## 2. COLOR SYSTEM
+
+### Light Mode
+```
+Background:        #FFFFFF  (white)
+Sidebar:           #F8F9FA  (subtle gray)
+Card:              #FFFFFF  (white)
+Border:            #E5E7EB  (light gray)
+
+Text Primary:      #111827  (near black)
+Text Secondary:    #6B7280  (medium gray)
+Text Tertiary:     #9CA3AF  (light gray)
+
+Primary:           #1E40AF  (deep blue)
+Primary Hover:     #1D4ED8
+Primary Active:    #1E3A8A
+Primary Light:     #DBEAFE
+Primary Text:      #FFFFFF
+
+Success:           #059669  (emerald)
+Success Light:     #D1FAE5
+Warning:           #D97706  (amber)
+Warning Light:     #FEF3C7
+Error:             #DC2626  (red)
+Error Light:       #FEE2E2
+Info:              #0284C7  (sky blue)
+Info Light:        #E0F2FE
+
+Status Pending:    #F59E0B
+Status Processing: #3B82F6
+Status Completed:  #10B981
+Status Failed:     #EF4444
+Status Void:       #6B7280
+```
+
+### Dark Mode
+```
+Background:        #0F0F11  (almost black)
+Sidebar:           #141416
+Card:              #1A1A1E
+Border:            #2C2C30
+
+Text Primary:      #F5F5F7
+Text Secondary:    #98989D
+Text Tertiary:     #636366
+
+Primary:           #3B82F6
+Primary Hover:     #60A5FA
+Primary Active:    #2563EB
+Primary Light:     #1E3A5F
+Primary Text:      #FFFFFF
+
+Success:           #34D399
+Success Light:     #064E3B
+Warning:           #FBBF24
+Warning Light:     #78350F
+Error:             #F87171
+Error Light:       #7F1D1D
+Info:              #38BDF8
+Info Light:        #0C4A6E
+
+Status Pending:    #FBBF24
+Status Processing: #60A5FA
+Status Completed:  #34D399
+Status Failed:     #F87171
+Status Void:       #98989D
+```
+
+---
+
+## 3. TYPOGRAPHY
+
+### English
+| Use | Font | Weight | Size | Line Height |
+|-----|------|--------|------|-------------|
+| Display | Inter | 700 | 32px | 40px |
+| H1 | Inter | 700 | 24px | 32px |
+| H2 | Inter | 600 | 20px | 28px |
+| H3 | Inter | 600 | 16px | 24px |
+| Body | Inter | 400 | 14px | 20px |
+| Body Small | Inter | 400 | 13px | 18px |
+| Caption | Inter | 400 | 12px | 16px |
+| Label | Inter | 500 | 14px | 20px |
+| Label Small | Inter | 500 | 13px | 18px |
+| Mono | JetBrains Mono | 400 | 13px | 18px |
+
+### Bangla
+| Use | Font | Weight | Size | Line Height |
+|-----|------|--------|------|-------------|
+| Display | Noto Sans Bengali | 700 | 32px | 44px |
+| H1 | Noto Sans Bengali | 700 | 24px | 36px |
+| H2 | Noto Sans Bengali | 600 | 20px | 32px |
+| H3 | Noto Sans Bengali | 600 | 16px | 26px |
+| Body | Noto Sans Bengali | 400 | 14px | 24px |
+| Body Small | Noto Sans Bengali | 400 | 13px | 22px |
+| Caption | Noto Sans Bengali | 400 | 12px | 20px |
+| Label | Noto Sans Bengali | 500 | 14px | 24px |
+
+### Font Loading
+- Inter: Google Fonts (preload, swap)
+- Noto Sans Bengali: Google Fonts (preload, swap)
+- JetBrains Mono: Google Fonts (lazy load, for code/ref fields)
+- Font fallback stack with system fonts for each script
+
+---
+
+## 4. SPACING & LAYOUT
+
+### Spacing Scale (4px base)
+```
+0:     0px
+1:     4px
+2:     8px
+3:     12px
+4:     16px
+5:     20px
+6:     24px
+8:     32px
+10:    40px
+12:    48px
+16:    64px
+20:    80px
+24:    96px
+```
+
+### Layout Grid
+- Max content width: 1280px
+- Sidebar width: 240px (collapsed: 56px)
+- Rail (secondary sidebar): 56px (optional, for tools/view modes)
+- Content padding: 32px (horizontal), 32px (vertical top)
+- Gutter between columns: 24px
+
+### Breakpoints (responsive, desktop-first)
+```
+Desktop:    1280px+   (primary target)
+Small Desk: 1024px    (sidebar collapses to icons)
+Tablet:     768px     (sidebar becomes bottom nav)
+Mobile:     480px     (full-stack layout)
+```
+
+---
+
+## 5. COMPONENT LIBRARY
+
+### 5.1 Button
+
+```
+[ Primary ]  [ Secondary ]  [ Ghost ]  [ Danger ]
+[   Loading...   ]  [with icon →]  [← with icon]  [icon only]
+[ Small ]  [ Default ]  [ Large ]
+
+States: default, hover, active, disabled, loading
+```
+
+| Variant | Background | Text | Border | Hover |
+|---------|-----------|------|--------|-------|
+| Primary | Primary-500 | White | None | Primary-600 |
+| Secondary | Transparent | Text-Primary | Border | bg-gray-50 |
+| Ghost | Transparent | Text-Primary | None | bg-gray-100 |
+| Danger | Error-500 | White | None | Error-600 |
+| Success | Success-500 | White | None | Success-600 |
+
+Sizes: sm (32px h), default (36px h), lg (44px h)
+Loading: spinner + text, button width preserved
+
+### 5.2 Input
+
+```
+Label
+[__________________________]
+Placeholder text
+|— Helper text —|— Error —|
+
+Label (disabled)
+[__________________________]
+
+With icon:  [🔍 Search customers...]
+With clear: [John Doe         ×]
+With counter: [_____] 12/100
+```
+
+| State | Border | Background | Text |
+|-------|--------|-----------|------|
+| Default | Border | White | Text-Primary |
+| Focus | Primary-500 + ring | White | Text-Primary |
+| Hover | Border-dark | White | Text-Primary |
+| Error | Error-500 + ring | Error-Light | Text-Primary |
+| Disabled | Border-light | Gray-100 | Text-Tertiary |
+| Read-only | Border | Gray-50 | Text-Primary |
+
+### 5.3 Select / Dropdown
+
+```
+[ Option selected    ▼ ]
+[ Option A           ✓ ]
+[ Option B             ]
+[ Option C             ]
+— No results —
+[ Search...             ]
+```
+
+- Native select for mobile
+- Custom dropdown for desktop with search
+- Multi-select with chips: [Option A ×] [Option B ×] [+ Add]
+
+### 5.4 Card
+
+```
+┌─────────────────────────────────────┐
+│  ┌────┐  Title          [action ▼] │
+│  │icon│  Description text           │
+│  └────┘  Subtitle / metadata        │
+│                                     │
+│  Content area                       │
+│                                     │
+│  ─────────────────────────────────  │
+│  Footer with actions                │
+└─────────────────────────────────────┘
+```
+
+Variants: default (border), elevated (shadow), interactive (hover lift), selected (primary border)
+Padding: p-4 (default), p-6 (large)
+
+### 5.5 Table / Data Grid
+
+```
+┌──────────────────────────────────────────┐
+│ [ ] Name    │ Phone     │ Status   │ Act │
+├──────────────────────────────────────────┤
+│ [✓] Rahman  │ 017xxxx   │ ● Active  │ …  │
+│ [ ] Sultana │ 018xxxx   │ ○ Inactive│ …  │
+├──────────────────────────────────────────┤
+│ Showing 2 of 47    [←] 1 2 3 … 10 [→]    │
+└──────────────────────────────────────────┘
+```
+
+- Row hover: subtle background shift
+- Selected row: primary light
+- Sortable columns (click header, arrow indicator)
+- Column resize (drag handle)
+- Bulk selection (checkbox column)
+- Inline row actions (three-dot menu)
+- Pagination or infinite scroll (configurable)
+- Empty state: illustration + "No customers yet" + CTA button
+- Loading state: skeleton rows (3-5 pulsing lines)
+
+### 5.6 Modal / Dialog
+
+```
+┌────────────────────────────┐
+│  Title           [×]       │
+│──────────────────────────── │
+│                            │
+│  Content (scrollable)      │
+│                            │
+│──────────────────────────── │
+│  [Cancel]    [Confirm]     │
+└────────────────────────────┘
+```
+
+- Overlay: rgba(0,0,0,0.5), backdrop-blur-sm
+- Width: sm (400px), md (560px), lg (720px), xl (960px), full (screen-40)
+- Close: ESC key, click outside, X button
+- Confirm disabled until required fields filled
+- Form inside modal: auto-save on close (draft)
+- Slide-in variant (drawer from right): for detail/edit views
+
+### 5.7 Drawer (Side Panel)
+
+```
+┌──────────────────────┬──────────────┐
+│ Main content          │  ┌─────────┐│
+│ (dimmed when open)   │  │ Title   ││
+│                       │  │         ││
+│                       │  │ Content ││
+│                       │  │         ││
+│                       │  │ [Close] ││
+│                       │  └─────────┘│
+└──────────────────────┴──────────────┘
+```
+
+- Slides in from right
+- Width: 400px (default), 600px (wide)
+- Content padded, scrollable
+- Close: ESC, click outside overlay, X button
+- Used for: customer detail, document preview, operator detail, settings
+
+### 5.8 Toast / Notification
+
+```
+┌──────────────────────────┐
+│ ✓ Document generated     │
+│ Successfully created #123│
+└──────────────────────────┘
+
+┌──────────────────────────┐
+│ ⚠️ Low disk space        │
+│ [Dismiss]                │
+└──────────────────────────┘
+```
+
+Position: top-right
+Types: success (green), error (red), warning (amber), info (blue)
+Auto-dismiss: 5s (info/success), sticky (error/warning until dismissed)
+Stack: max 3 visible, queue overflow
+Action: click to navigate to relevant page
+
+### 5.9 Skeleton / Loading
+
+```
+┌─────────────────────┐
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓   │
+│ ▓▓▓▓▓▓▓▓            │
+│                     │
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓      │
+│ ▓▓▓▓▓               │
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
+└─────────────────────┘
+```
+
+- Animated pulse (opacity 0.3 → 0.7 → 0.3)
+- Match layout of actual content (table skeleton, card skeleton, text skeleton)
+- Show immediately on navigation, no delay
+
+### 5.10 Badge / Tag
+
+```
+[ Active ]  [ Inactive ]  [ Pending ]  [ Verified ]
+[ Premium ]  [ New ]  [ Beta ]  [ BETA | New ]
+```
+
+| Variant | Background | Text Color |
+|---------|-----------|------------|
+| Default | Gray-100 | Text-Secondary |
+| Success | Success-Light | Success-700 |
+| Warning | Warning-Light | Warning-700 |
+| Error | Error-Light | Error-700 |
+| Info | Info-Light | Info-700 |
+| Primary | Primary-Light | Primary-700 |
+
+Size: sm (18px h), default (22px h)
+Can be dismissible (×) or interactive (click to filter)
+
+### 5.11 Empty State
+
+```
+     ┌──────┐
+     │ icon │   (64x64, centered, gray)
+     └──────┘
+
+  No customers yet
+  Add your first customer to start
+  generating documents.
+
+  [      + Add Customer      ]
+```
+
+Illustration: simple line art (undraw.co style), two-tone primary+gray
+Title: "No [items] yet"
+Description: what to do next
+CTA: primary button to create first item
+(optional) Link to docs: "Learn more about managing customers"
+
+### 5.12 Error State
+
+```
+     ┌──────┐
+     │  !   │   (warning triangle)
+     └──────┘
+
+  Something went wrong
+  We couldn't load your customers.
+  This might be a temporary issue.
+
+  [      Try Again      ]
+```
+
+No blame, no jargon, clear action.
+
+### 5.13 Command Palette (CMD+K)
+
+```
+┌──────────────────────────────────┐
+│ 🔍 Search customers, actions...  │
+│──────────────────────────────────│
+│ Recent searches                  │
+│  → Rahman — View customer        │
+│  → New document — Create doc     │
+│──────────────────────────────────│
+│ Actions                          │
+│  > New Customer       ⌘N         │
+│  > New Document       ⌘D         │
+│  > Search Customers   ⌘F         │
+│  > Go to Dashboard    ⌘1         │
+│ > Go to Documents     ⌘2         │
+│ > Go to Settings      ⌘,        │
+│──────────────────────────────────│
+│ Results for "rah"                │
+│  Customer: Abdur Rahman         │
+│  Customer: Rahima Khatun        │
+│  Document: #123 — Rahman cert   │
+└──────────────────────────────────┘
+```
+
+- Global: CMD+K anywhere
+- Results: customers, documents, actions, settings pages
+- Keyboard nav: ↑↓ to select, Enter to execute, ESC to close
+- Sections: Quick Actions, Recent, Search Results
+- Fuzzy search across all entities
+- Each item has icon + label + shortcut hint (if applicable)
+
+### 5.14 Timeline
+
+```
+Today
+  │  ┌─┐
+  │  │D│ 10:30 AM — Document generated
+  │  └─┘  Character Certificate for Abdur Rahman
+  │       └─ View document
+  │
+  │  ┌─┐
+  │  │C│ 09:15 AM — Customer created
+  │  └─┘  Abdur Rahman added by Rahim (Operator)
+  │
+Yesterday
+  │  ┌─┐
+  │  │O│ 04:45 PM — Order placed
+  │  └─┘  Order #456 — New Certificate
+  │       Status: Processing
+```
+
+Icons per action type: D=document, C=customer, O=order, N=note, P=payment
+Each entry: icon, timestamp, action description, actor, link to entity
+Group by: Today, Yesterday, This Week, This Month, Older
+Click entry: opens detail (drawer or navigate)
+Empty timeline: "No activity yet. Start by adding a customer."
+
+### 5.15 Stat Card
+
+```
+┌──────────────────┐
+│  📄 Documents    │
+│  1,247           │  ← big number
+│  ↑ 12% from last │  ← trend indicator
+│     week         │
+└──────────────────┘
+```
+
+Variants: with sparkline chart, with icon, compact (in grid)
+Trend: up (green arrow), down (red arrow), flat (gray dash)
+Click: navigate to full report
+
+### 5.16 Avatar / User Badge
+
+```
+          ┌─────┐               ┌─────┐
+          │  R  │               │ 🖼  │
+          └─────┘               └─────┘
+         Initials                Photo
+```
+
+Size: xs (24px), sm (32px), md (40px), lg (48px), xl (64px)
+Initials: first two letters of name, on primary-light background
+Photo: rounded full, fallback to initials on error
+Status indicator: small dot (online=green, offline=gray, busy=yellow)
+Group: overlapping avatars (max 4, +N overflow)
+
+### 5.17 Progress Bar
+
+```
+[████████████░░░░░░░░] 65% Complete
+```
+
+Height: 4px (default), 8px (large), 2px (thin)
+Color: primary (default), success (completed), warning (partial), error (failed)
+Label: optional, left or right
+Indeterminate: animated stripe (for unknown duration operations)
+Steps variant: ○──●──○──○──○ (multi-step form)
+
+### 5.18 Tab Navigation
+
+```
+[ Customers ] [ Documents ] [ Orders ] [ + ]
+[__________/________________________________]
+```
+
+Active tab: primary color + bottom border indicator (2px)
+Hover tab: subtle background
+Tab count badge: "Documents (24)"
+Closeable tabs: for document editing (VS Code style)
+Horizontal scroll: if tabs overflow
+
+### 5.19 Filter Bar
+
+```
+[ All Status ▼ ] [ Last 7 days ▼ ] [ Operator ▼ ] [ More filters ▼ ]
+[ Active filters: Pending | Today | Rahim  × Clear all ]
+```
+
+Each filter: dropdown or popover with options
+Applied filters: displayed as dismissible tags
+Clear all: one click removes all filters
+URL-synced: filter state in query parameters (shareable/bookmarkable)
+
+### 5.20 Search (Page-level)
+
+```
+[ 🔍 Search by name, phone, NID...  ⚙ Filters ]
+```
+
+Debounced (300ms), shows results as you type
+Results in dropdown: top 5-10 matches + "View all results"
+Search across: customers, documents, orders (configurable per page)
+Recent searches remembered (localStorage)
+Keyboard shortcut: CTRL+F (page-level), CMD+K (global)
+
+---
+
+## 6. PAGE LAYOUTS
+
+### 6.1 Main Layout (Authenticated)
+
+```
+┌────────────┬──────────────────────────────────────────┐
+│            │  Top Bar                                 │
+│ Sidebar    │  [CMD+K search]          🔔 👤 Settings  │
+│            ├──────────────────────────────────────────┤
+│            │                                          │
+│ Icons      │  Main Content Area                       │
+│ + Labels   │  (page-specific layout)                  │
+│            │                                          │
+│            │                                          │
+│ Dashboard  │                                          │
+│ Customers  │                                          │
+│ Documents  │                                          │
+│ Orders     │                                          │
+│ Reports    │                                          │
+│ Settings   │                                          │
+│            │                                          │
+│            │  ────────────────────────────────────     │
+│            │  Status bar (optional): queue, time, sync │
+└────────────┴──────────────────────────────────────────┘
+```
+
+Sidebar: 240px, collapsible to 56px (icons only)
+Top bar: 48px, fixed
+Content: scrollable, padded 32px
+Status bar: 28px, shows background job queue status, last sync time, shop name
+
+### 6.2 Dashboard Page
+
+```
+┌───────────────────────────────────────────────────────┐
+│ Dashboard                                Oct 12, 2026 │
+│                                                       │
+│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ │
+│ │Documents │ │Customers │ │  Orders  │ │ Revenue  │ │
+│ │   1,247  │ │    458   │ │    89    │ │ ৳ 45,200 │ │
+│ │  ↑ 12%   │ │  ↑ 5%    │ │  ↓ 3%    │ │  ↑ 18%   │ │
+│ └──────────┘ └──────────┘ └──────────┘ └──────────┘ │
+│                                                       │
+│ ┌────────────────────┐ ┌────────────────────────────┐ │
+│ │ Recent Documents   │ │ Pending Queue             │ │
+│ │ #124 - Rahman      │ │ ⏳ 3 docs generating       │ │
+│ │ #123 - Sultana     │ │ ⚠️ 1 failed — retry       │ │
+│ │ #122 - Hossain     │ │                            │ │
+│ │ View all →         │ │ View queue →               │ │
+│ └────────────────────┘ └────────────────────────────┘ │
+│                                                       │
+│ ┌────────────────────────────────────────────────────┐ │
+│ │ Activity Timeline                                  │ │
+│ │ 10:30  Doc generated for Abdur Rahman              │ │
+│ │ 09:15  New customer: Fatima Begum                  │ │
+│ │ 08:45  Operator Rahim logged in                    │ │
+│ └────────────────────────────────────────────────────┘ │
+│                                                       │
+│ Quick Actions (floating, bottom-right)                │
+│ [ + New Customer ] [ + New Document ] [ Search ]      │
+└───────────────────────────────────────────────────────┘
+```
+
+### 6.3 Customer List Page
+
+```
+┌───────────────────────────────────────────────────────┐
+│ Customers                    [ + New ] [ Import CSV ] │
+│                                                       │
+│ [🔍 Search by name, phone, NID...] [ Filter ▼ ]      │
+│                                                       │
+│ ┌───────────────────────────────────────────────────┐ │
+│ │ [ ] Name       │ Phone    │ Docs  │ Last Active   │ │
+│ ├───────────────────────────────────────────────────┤ │
+│ │ [ ] Rahman     │ 017xxxx  │  12   │ Today 10:30   │ │
+│ │ [✓] Sultana    │ 018xxxx  │   5   │ Yesterday     │ │
+│ │ [ ] Hossain    │ 019xxxx  │   1   │ Last week     │ │
+│ │ [ ] Begum      │ 016xxxx  │   8   │ Today 08:15   │ │
+│ │ [ ] Ali        │ 015xxxx  │   3   │ 2 days ago    │ │
+│ └───────────────────────────────────────────────────┘ │
+│ Showing 5 of 458               [←] 1 2 3 … 92 [→]    │
+└───────────────────────────────────────────────────────┘
+
+───────────────── Drawer (slides from right) ─────────────────
+┌───────────────────────────────────────────────────────────┐
+│ × Customer Details                    [Edit] [More ▼]     │
+│                                                           │
+│ Abdur Rahman                                              │
+│ 01712-345678  |  rahman@email.com                         │
+│ Vill: Dhanmondi, Dhaka                                    │
+│                                                           │
+│ ┌──────────┐ ┌──────────┐ ┌──────────┐                   │
+│ │Documents │ │  Orders  │ │   Total  │                   │
+│ │    12    │ │    3     │ │ ৳ 2,400  │                   │
+│ └──────────┘ └──────────┘ └──────────┘                   │
+│                                                           │
+│ Documents (12)                         [View all →]      │
+│ • Char Cert #124  — Today 10:30                          │
+│ • Income Cert #112 — 5 Oct 2026                          │
+│ • Birth Cert #98  — 28 Sep 2026                           │
+│                                                           │
+│ Timeline                                                  │
+│ 10:30  Document generated ✓                               │
+│ 09:15  Customer updated (phone)                           │
+│ 5 Oct  Order placed — Certificate                         │
+│ 28 Sep Customer created                                    │
+└───────────────────────────────────────────────────────────┘
+```
+
+### 6.4 Customer Create / Edit Form
+
+```
+┌───────────────────────────────────────────────────────┐
+│ × New Customer                         [Save] [Cancel]│
+│                                                       │
+│ ┌───────────────────────────────────────────────────┐ │
+│ │                                                   │ │
+│ │  Full Name     [Abdur Rahman___________________]   │ │
+│ │  Phone         [01712-345678___________________]   │ │
+│ │  Email         [rahman@email.com_______________]   │ │
+│ │  NID Number    [1234567890_____________________]   │ │
+│ │  Address       [Village/Street, Thana, District_]  │ │
+│ │  Tags          [Regular ×] [Premium ×] [+ Add]     │ │
+│ │  Notes         [_____________________________]     │ │
+│ │  Custom Fields [Father's Name: Abdul__] [Add +]    │ │
+│ │                                                   │ │
+│ └───────────────────────────────────────────────────┘ │
+│                                                       │
+│ Data saved as draft.  Last saved: 1 min ago           │
+└───────────────────────────────────────────────────────┘
+```
+
+### 6.5 Document Generation Page
+
+This is THE most important page. Every shop operator uses this daily.
+
+```
+┌───────────────────────────────────────────────────────┐
+│ × New Document                        [Generate] [↻]  │
+│                                                       │
+│ ┌──────────────────────┬────────────────────────────┐ │
+│ │ Document Type        │ Template Preview            │ │
+│ │ [Character Cert ▼]   │                             │ │
+│ │                      │  ┌─────────────────────┐    │ │
+│ │ Customer             │  │                     │    │ │
+│ │ [Search customer...] │  │  [LIVE PREVIEW       │    │ │
+│ │  or [+ New]          │  │   of template with   │    │ │
+│ │                      │  │   filled data]       │    │ │
+│ │ Selected:             │  │                     │    │ │
+│ │ Abdur Rahman         │  │                     │    │ │
+│ │ 01712-345678         │  └─────────────────────┘    │ │
+│ │                      │                             │ │
+│ │ ──────────────────   │  Preview updates in          │ │
+│ │                      │  real-time as you type       │ │
+│ │ Template Fields      │                             │ │
+│ │                      │                             │ │
+│ │ Applicant Name       │  [🔄 Regenerate preview]     │ │
+│ │ [Abdur Rahman    ]   │  [🔍 Zoom in] [Full screen] │ │
+│ │                      │                             │ │
+│ │ Father's Name        │                             │ │
+│ │ [Abdul Karim     ]   │                             │ │
+│ │                      │                             │ │
+│ │ Mother's Name        │                             │ │
+│ │ [Fatima Begum    ]   │                             │ │
+│ │                      │                             │ │
+│ │ Village              │                             │ │
+│ │ [Dhanmondi       ]   │                             │ │
+│ │                      │                             │ │
+│ │ Thana                │                             │ │
+│ │ [Dhaka Sadar     ]   │                             │ │
+│ │                      │                             │ │
+│ │ District             │                             │ │
+│ │ [Dhaka           ]   │                             │ │
+│ │                      │                             │ │
+│ │ Purpose              │                             │ │
+│ │ [Admission       ]   │                             │ │
+│ │                      │                             │ │
+│ │ [ ] Include photo    │                             │ │
+│ │ [ ] Notary stamp     │                             │ │
+│ │                      │                             │ │
+│ └──────────────────────┴────────────────────────────┘ │
+│                                                       │
+│ Drawn saved: 2 min ago                    [Cancel]    │
+└───────────────────────────────────────────────────────┘
+```
+
+Key UX decisions:
+- Left panel: form, Right panel: live preview (side-by-side)
+- Auto-save every 30 seconds (draft)
+- Preview re-renders on field change (debounced 500ms)
+- Customer search: type to search, recent customers shown first
+- Template fields dynamically loaded based on document type
+- Advanced fields collapsible under "More options"
+- "Generate" button always visible (sticky footer)
+- Queued generation shows progress indicator
+
+### 6.6 Document List Page
+
+```
+┌───────────────────────────────────────────────────────┐
+│ Documents                          [ + New ] [Export] │
+│                                                       │
+│ [🔍 Search by reference, customer...] [All Types ▼]   │
+│ [All Status ▼]  [Last 30 days ▼]                      │
+│                                                       │
+│ ┌───────────────────────────────────────────────────┐ │
+│ │ #     │ Customer  │ Type     │ Status   │ Date    │ │
+│ ├───────────────────────────────────────────────────┤ │
+│ │ #124 │ A. Rahman │ Char     │ ✅ Done  │ Today   │ │
+│ │ #123 │ S. Sultana│ Income   │ ✅ Done  │ Today   │ │
+│ │ #122 │ M. Hossain│ Birth    │ ⏳ Process│ Yest    │ │
+│ │ #121 │ F. Begum  │ Char     │ ❌ Failed │ Yest    │ │
+│ │ #120 │ A. Ali    │ Student  │ ✅ Done  │ 2d ago  │ │
+│ └───────────────────────────────────────────────────┘ │
+│ Showing 5 of 1,247              [←] 1 2 3 … 250 [→]    │
+│                                                       │
+│ ───────────────────────────────────────────────────────│
+│ Batch Actions: [Download Selected] [Email Selected]     │
+└───────────────────────────────────────────────────────┘
+```
+
+### 6.7 Document Detail / Preview
+
+```
+┌───────────────────────────────────────────────────────┐
+│ Document #124                    [Download] [Email]    │
+│ Reference: CHR-2026-10-12-00124  [Print]  [More ▼]    │
+│                                                       │
+│ ┌───────────────────────────────────────────────────┐ │
+│ │                                                   │ │
+│ │              CHARACTER CERTIFICATE                │ │
+│ │                                                   │ │
+│ │  This is to certify that Mr. Abdur Rahman         │ │
+│ │  son of Abdul Karim of Village Dhanmondi,         │ │
+│ │  Thana Dhaka Sadar, District Dhaka...              │ │
+│ │                                                   │ │
+│ │              (Full PDF preview)                    │ │
+│ │                                                   │ │
+│ │                                                   │ │
+│ └───────────────────────────────────────────────────┘ │
+│                                                       │
+│ Details                                                │
+│ Customer: Abdur Rahman          [View profile →]      │
+│ Template: Character Certificate (v2)                   │
+│ Generated by: Rahim (Operator)                         │
+│ Generated: 12 Oct 2026, 10:30 AM                       │
+│ Status: ✅ Completed                                    │
+│                                                       │
+│ Timeline                                               │
+│ 10:30  Generated ✓                                     │
+│ 10:28  Queued for generation                           │
+│ 10:27  Form submitted by Rahim                         │
+│ 10:25  Draft started                                   │
+└───────────────────────────────────────────────────────┘
+```
+
+### 6.8 Shop Settings Page
+
+```
+┌───────────────────────────────────────────────────────┐
+│ Settings                                              │
+│                                                       │
+│ ┌───────────────────────────────────────────────────┐ │
+│ │ General │ Operators │ Templates │ Backup │ Billing │ │
+│ │───────────────────────────────────────────────────┤ │
+│ │                                                   │ │
+│ │ Shop Name      [Rahman Digital Service________]   │ │
+│ │ Shop Tagline   [Fast & Reliable Certificates___]   │ │
+│ │ Phone          [01712-345678___________________]   │ │
+│ │ Email          [rahman@digitalservice.com______]   │ │
+│ │ Address        [Dhanmondi, Dhaka_______________]   │ │
+│ │                                                   │ │
+│ │ Shop Logo      [Upload]   [Remove]                 │ │
+│ │ [⌧ Current logo preview]                            │ │
+│ │                                                   │ │
+│ │ Business Hours:                                    │ │
+│ │  Sat-Thu  9:00 AM  to  8:00 PM  [Edit]            │ │
+│ │  Friday   Closed                                   │ │
+│ │                                                   │ │
+│ │ Default Language: [ বাংলা ] [ English ]            │ │
+│ │                                                   │ │
+│ │ Theme: [ Light ] [ Dark ] [ System ]               │ │
+│ │                                                   │ │
+│ │                        [Save Changes] [Cancel]     │ │
+│ └───────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────┘
+```
+
+### 6.9 Admin Panel (Platform Admin)
+
+Same layout but sidebar has:
+```
+Platform Dashboard
+Shops (manage all)
+Users (manage all)
+Document Templates
+Document Types
+System Settings
+Reports
+Support
+```
+
+Admin has a shop switcher (top bar) to view any shop's dashboard as that shop owner would see it.
+
+---
+
+## 7. USER FLOWS
+
+### 7.1 Shop Owner Signup → First Document
+
+```
+1. Visit repdoc.com
+2. Click "Start Free Trial"
+3. Enter: Name, Email, Phone, Password
+4. Enter: Shop Name, Shop Address
+5. Email/Phone verification (OTP)
+6. Welcome screen: "🎉 Your shop is ready!"
+     → CTA: "Add your first customer"
+     → CTA: "Explore dashboard"
+     → CTA: "Watch quick tour" (optional)
+7. Dashboard (empty state)
+8. Search bar: "No customers yet. Add one!"
+9. Click "+ New Customer" or press CMD+K → "New Customer"
+10. Fill form (auto-saves draft)
+11. Click "Save"
+12. Customer appears in list
+13. Click "New Document" on customer
+14. Select document type, fill fields, generate
+15. Success toast: "✅ Document #001 generated!"
+16. Preview, download, or email
+```
+
+### 7.2 Operator Daily Workflow
+
+```
+1. Login → Shop Dashboard
+2. See pending queue (documents to generate)
+3. Click first pending → Document form
+4. Customer info pre-filled if from order
+5. Fill remaining fields
+6. Preview (quick glance)
+7. Click "Generate"
+8. Toast: "Generating..." → "✅ Done"
+9. Back to queue → next document
+10. End of day: run Daily Report (settings icon or shortcut)
+```
+
+### 7.3 Customer Ordering a Service
+
+```
+1. Visit shop.repdoc.com (public page)
+2. Browse services → click "Character Certificate"
+3. See: price, delivery time, description, samples
+4. Click "Order Now"
+5. Fill form with their details
+6. Choose payment: bKash/Nagad/Wallet (Phase 3)
+7. Pay → Order confirmed
+8. Notification: "Your order #456 is being processed"
+9. Track: status updates in real-time
+10. Document ready → Download link
+11. Review prompt: "Rate this service"
+```
+
+---
+
+## 8. RESPONSIVE BREAKPOINTS & ADAPTATIONS
+
+### Desktop (1280px+) — Primary Target
+Full layout: sidebar + top bar + content
+Side-by-side document form + preview (960px+)
+
+### Small Desktop (1024-1279px)
+Sidebar: icons only (labels hidden)
+Top bar: condensed
+Document form: stacked (preview below form)
+
+### Tablet (768-1023px)
+Sidebar → bottom tab bar (5 tabs)
+Top bar: search icon only, rest in overflow menu
+Tables → card list layout
+Drawers → full-screen panels
+
+### Mobile (480-767px)
+Bottom tab bar (4 tabs, label hidden)
+Top bar: hamburger menu + shop name
+Cards: full width, stacked
+Forms: single column, full width inputs
+FAB for primary action (+)
+Modals → full-screen sheets
+
+---
+
+## 9. ANIMATIONS & TRANSITIONS
+
+| Element | Animation | Duration | Easing |
+|---------|-----------|----------|--------|
+| Page transition | Fade + slight slide up | 200ms | ease-out |
+| Sidebar expand | Slide right | 150ms | ease-out |
+| Drawer open | Slide in from right | 250ms | ease-out |
+| Modal open | Scale up + fade overlay | 200ms | ease-out |
+| Toast enter | Slide in from right + fade | 300ms | ease-out |
+| Toast exit | Fade out + slide right | 200ms | ease-in |
+| Button hover | Background color shift | 100ms | ease |
+| Button click | Scale 0.97 | 80ms | ease |
+| Row hover | Background color shift | 100ms | ease |
+| Dropdown open | Fade + small translateY | 150ms | ease-out |
+| Skeleton pulse | Opacity pulse | 1.5s | ease-in-out |
+| Checkmark | Scale + rotate | 200ms | spring |
+| Tab switch | Content cross-fade | 150ms | ease |
+| Progress bar | Width transition | 300ms | ease |
+| Drag and drop | Scale 1.02 + shadow | 150ms | ease |
+
+### Reduce Motion
+- Respect `prefers-reduced-motion` OS setting
+- When enabled: disable all animations, instant transitions
+- No parallax, no auto-scrolling, no sparkline animations
+
+---
+
+## 10. INTERACTION PATTERNS
+
+### 10.1 Auto-Save
+- Forms auto-save draft every 30 seconds
+- Indicator: "Draft saved" (green) or "Unsaved changes" (yellow)
+- On navigate away: prompt if unsaved
+- On browser close: beforeunload if unsaved
+- Draft persisted to localStorage + server (when authenticated)
+
+### 10.2 Optimistic UI
+- On action (e.g., delete customer): immediately remove from list
+- Show undo toast: "Customer deleted. [Undo]"
+- If server fails: revert + show error toast
+- Applies to: create, update, delete, status changes
+
+### 10.3 Infinite Scroll vs Pagination
+- Search results: infinite scroll (virtualized list)
+- Tables with actions: pagination (10/25/50/100 per page)
+- Timeline: load more button ("Show older activity")
+- Customer documents: pagination (for performance with large sets)
+
+### 10.4 Drag & Drop
+- Template field reordering
+- Custom dashboard widget arrangement
+- File upload: drag zone + click
+- Sidebar reorder (customization mode)
+
+### 10.5 Batch Actions
+- Multi-select items via checkbox column
+- Actions appear in floating bar: [Download Selected] [Email Selected] [Delete Selected] [Export Selected]
+- Confirm dialog for destructive batch actions
+
+---
+
+## 11. ICONOGRAPHY
+
+- Library: **Lucide** (consistent, clean, used by shadcn/ui)
+- Style: outlined, 1.5px stroke, 20x20 default
+- All icons have a label (tooltip on hover, text next to icon in sidebar)
+- Custom icons for: document types (certificate, income, birth etc.), Bangla script icon
+
+---
+
+## 12. MICROCOPY GUIDELINES
+
+### Tone
+- Professional but warm
+- Clear, not cutesy
+- Action-oriented
+- No jargon
+
+### Examples
+| Context | Good | Bad |
+|---------|------|-----|
+| Empty state | "No customers yet. Add your first customer to get started." | "No records found." |
+| Error | "Something went wrong loading customers. Try again." | "Error 500: Internal Server Error" |
+| Success | "Document generated successfully." | "Document created." |
+| Confirm delete | "Are you sure? This action cannot be undone." | "Delete?" |
+| Form validation | "Phone number must be 11 digits." | "Invalid input." |
+
+### Bangla Microcopy
+All microcopy translated to Bangla with same tone. Professional Bangla (not overly formal, not slang).
+
+---
+
+## 13. ACCESSIBILITY
+
+- All interactive elements keyboard accessible (Tab, Enter, Space, Arrow keys)
+- Focus indicators: 2px primary ring, never :focus { outline: none } without replacement
+- ARIA labels on icon-only buttons
+- Color contrast: AA minimum (4.5:1 normal text, 3:1 large text)
+- Form inputs associated with labels
+- Error messages linked to inputs via aria-describedby
+- Skip to content link (first focusable element)
+- Announce dynamic updates via aria-live regions (toast, loading)
+- Screen reader support for tables (scope, caption)
+- Bangla screen reader support (compatible with popular screen readers)
+
+---
+
+## 14. FILE ORGANIZATION (PHP Structure)
+
+```
+/
+├── index.php                    # Entry point (front controller)
+├── .htaccess                    # URL rewriting
+├── config/
+│   ├── database.php             # MySQL connection
+│   ├── app.php                  # App settings
+│   └── permissions.php          # RBAC permission maps
+│
+├── core/                        # Framework kernel
+│   ├── Router.php               # Request router
+│   ├── Controller.php           # Base controller
+│   ├── Model.php                # Base model (DB wrapper)
+│   ├── View.php                 # Template renderer
+│   ├── Middleware.php            # Auth, CSRF, permission middleware
+│   ├── Session.php              # Session handler
+│   ├── Validator.php            # Form validation
+│   ├── Database.php             # PDO wrapper
+│   └── Helpers.php              # Global utility functions
+│
+├── controllers/
+│   ├── AuthController.php       # Login, register, logout, OTP
+│   ├── DashboardController.php  # Shop dashboard
+│   ├── CustomerController.php   # Customer CRUD
+│   ├── DocumentController.php   # Document generation & management
+│   ├── TemplateController.php   # Template CRUD
+│   ├── ServiceController.php    # Marketplace services
+│   ├── OrderController.php      # Customer orders
+│   ├── WalletController.php     # Wallet & transactions
+│   ├── ChatController.php       # Messaging
+│   ├── NotificationController.php
+│   ├── ReportController.php     # Reports & analytics
+│   ├── AdminController.php      # Platform admin
+│   ├── ShopController.php       # Shop settings & public page
+│   └── ApiController.php        # API endpoints
+│
+├── models/
+│   ├── User.php
+│   ├── Shop.php
+│   ├── Customer.php
+│   ├── Document.php
+│   ├── DocumentTemplate.php
+│   ├── Service.php
+│   ├── Order.php
+│   ├── Review.php
+│   ├── Wallet.php
+│   ├── Transaction.php
+│   ├── Conversation.php
+│   ├── Message.php
+│   ├── Notification.php
+│   └── Job.php                  # Queue job model
+│
+├── views/
+│   ├── layouts/
+│   │   ├── main.php             # Authenticated layout (sidebar + topbar)
+│   │   ├── auth.php             # Login/register layout
+│   │   └── public.php           # Public shop page layout
+│   ├── auth/
+│   │   ├── login.php
+│   │   ├── register.php
+│   │   └── verify-otp.php
+│   ├── dashboard/
+│   │   └── index.php
+│   ├── customers/
+│   │   ├── list.php
+│   │   ├── form.php
+│   │   └── detail.php
+│   ├── documents/
+│   │   ├── create.php           # Form + preview (THE critical page)
+│   │   ├── list.php
+│   │   └── detail.php
+│   ├── templates/
+│   │   ├── list.php
+│   │   └── editor.php
+│   ├── services/
+│   │   ├── list.php
+│   │   └── form.php
+│   ├── orders/
+│   │   ├── list.php
+│   │   └── detail.php
+│   ├── wallet/
+│   │   ├── dashboard.php
+│   │   └── transactions.php
+│   ├── reports/
+│   │   ├── daily.php
+│   │   └── analytics.php
+│   ├── settings/
+│   │   ├── shop.php
+│   │   ├── operators.php
+│   │   └── billing.php
+│   ├── admin/
+│   │   ├── shops.php
+│   │   ├── users.php
+│   │   └── templates.php
+│   ├── chat/
+│   │   └── index.php
+│   ├── public/
+│   │   └── shop-page.php        # Customer-facing storefront
+│   └── components/              # Reusable partials
+│       ├── sidebar.php
+│       ├── topbar.php
+│       ├── stat-card.php
+│       ├── table.php
+│       ├── modal.php
+│       ├── toast.php
+│       ├── empty-state.php
+│       ├── pagination.php
+│       ├── timeline.php
+│       ├── customer-search.php
+│       └── command-palette.php
+│
+├── assets/
+│   ├── css/
+│   │   ├── app.css              # Tailwind output + custom styles
+│   │   └── fonts.css            # @font-face declarations
+│   ├── js/
+│   │   ├── app.js               # Main JS bundle
+│   │   ├── command-palette.js   # CMD+K functionality
+│   │   ├── document-form.js     # Auto-save, preview, dynamic fields
+│   │   ├── customer-search.js   # AJAX search
+│   │   ├── chat.js              # Polling + message UI
+│   │   ├── notifications.js     # Bell dropdown + polling
+│   │   └── utils.js             # Debounce, fetch, helpers
+│   ├── icons/                   # Lucide SVG icons (sprite sheet)
+│   └── images/                  # Static images, illustrations
+│
+├── storage/
+│   ├── documents/               # Generated PDFs
+│   │   └── {shop_id}/
+│   │       └── {year}/
+│           └── {month}/
+│   ├── templates/               # Uploaded template assets
+│   ├── backups/                 # Database backups
+│   └── logs/                    # Error logs
+│
+├── vendor/                      # Composer dependencies
+├── migrations/                  # MySQL migration SQL files
+│   ├── 001_create_users.sql
+│   ├── 002_create_shops.sql
+│   ├── 003_create_customers.sql
+│   └── ...
+├── seeds/                       # Sample data SQL files
+│
+├── cron/                        # Cron job scripts
+│   ├── process-queue.php        # Process queued document generations
+│   ├── cleanup-temp.php         # Clean up temporary files
+│   ├── backup-database.php      # Daily database backup
+│   └── send-digest.php          # Send daily/weekly digest emails
+│
+├── composer.json
+├── package.json                 # Only if Tailwind CLI is used
+└── tailwind.config.js           # Tailwind configuration
+```

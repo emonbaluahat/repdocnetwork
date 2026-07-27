@@ -1,0 +1,164 @@
+# Phase 2 — Authentication, RBAC & Access Control
+
+## Approved Decisions
+
+### 1. Super Admin — Platform-level, NOT in shop_user
+- `users` table gets `is_super_admin TINYINT(1) DEFAULT 0` column
+- `shop_user` roles remain: owner, admin, operator, customer only
+- Super admin does not require shop_id
+- Can access all shops and users
+
+### 2. OTP SMS — Abstract interface created now
+- `core/OtpManager.php` — orchestrates OTP lifecycle
+- `services/SmsProviderInterface.php` — interface for SMS providers
+- `Mailer` used for email OTP; SMS left as pluggable
+
+### 3. Remember Me — Persistent cookie token
+- Store hashed token in login_tokens table
+- 30-day expiry, HttpOnly + Secure + SameSite
+- On auto-login: validate, regenerate session, rotate token
+- Invalidate on logout
+
+## Overview
+Build a complete production-ready authentication and authorization system on top of the existing Phase 1 foundation.
+
+---
+
+## Database Changes (5 New Migrations)
+
+| # | File | Purpose |
+|---|------|---------|
+| 1 | `migrations/011_create_failed_logins.sql` | Track failed login attempts (user_id, ip, attempted_at) for rate limiting & lockout |
+| 2 | `migrations/012_create_password_resets.sql` | Password reset tokens (user_id, token, expires_at, used_at) |
+| 3 | `migrations/013_create_otp_attempts.sql` | OTP attempt tracking (phone, ip, count, locked_until) |
+| 4 | `migrations/014_add_super_admin_role.sql` | Add `super_admin` to `shop_user.role` and `role_permission.role` ENUMs; seed super_admin with all permissions |
+| 5 | `migrations/015_create_invitations.sql` | Staff invitations (shop_id, email, phone, role, token, status, expires_at, invited_by) |
+
+## New Files (18 total)
+
+### Core (1)
+- `core/RateLimiter.php` — Key-based rate limiter (MySQL-backed, configurable max attempts, time window, lockout duration)
+
+### Models (5)
+- `models/FailedLogin.php` — Record failed attempts, count recent by user/IP, clear on success
+- `models/PasswordReset.php` — Create token, find valid token, mark used, expire old tokens
+- `models/OtpAttempt.php` — Record OTP send, check attempt count, lock/unlock phone
+- `models/Invitation.php` — Create/find/pending/accept/decline invitations
+- `models/AuditLog.php` — Log actions, query by entity/user/shop
+
+### Controllers (4 new, 1 enhanced)
+- `controllers/AuthController.php` — Enhanced: login detects email/phone/username, rate limiting, account lockout, session regeneration, remember me, forgot/reset password, OTP send/verify
+- `controllers/AdminController.php` — Super admin: list users, view detail, activate/deactivate, change role, reset password, audit log
+- `controllers/StaffController.php` — Shop owner: list staff, invite, change role, remove, manage permissions
+- `controllers/ProfileController.php` — View/edit profile, change password, manage sessions
+- `controllers/PermissionController.php` — List permissions grouped by module, assign to roles
+
+### Views (10 new, 3 enhanced)
+- `views/auth/login.php` — Enhanced with email/phone/username tabs (Alpine.js), remember me, forgot password link, rate limit warning
+- `views/auth/register.php` — Enhanced with shop name field, user status = pending
+- `views/auth/forgot-password.php` — New: email/phone input, sends OTP
+- `views/auth/reset-password.php` — New: new password + confirm
+- `views/auth/verify-otp.php` — Enhanced with resend timer, attempt counter
+- `views/profile/index.php` — New: profile info, change password, active sessions, logout other sessions
+- `views/admin/users.php` — New: user list with search, filter by status/role, pagination
+- `views/admin/user-detail.php` — New: user detail, activate/deactivate, change role, reset password
+- `views/admin/permissions.php` — New: permission matrix grouped by module, assign to roles
+- `views/settings/staff.php` — New: staff list with roles, invite button, remove
+- `views/settings/staff-invite.php` — New: invite form (email/phone, role select)
+- `views/settings/permissions.php` — New: role-based permission assignment UI
+
+### Modified Files (10)
+
+| File | Changes |
+|------|---------|
+| `routes.php` | Add ~20 new routes for auth, admin, staff, profile, permissions |
+| `core/Middleware.php` | Add `superAdmin()`, `role()` methods |
+| `core/AuthContext.php` | Add `isSuperAdmin()`, `isStaffManager()` |
+| `config/permissions.php` | Add `ROLE_SUPER_ADMIN`, new permission constants |
+| `config/app.php` | Add `MAX_LOGIN_ATTEMPTS`, `LOCKOUT_MINUTES`, `OTP_EXPIRY_MINUTES`, `OTP_MAX_ATTEMPTS` constants |
+| `config/lang/bn.php` | Add ~40 new translation keys |
+| `config/lang/en.php` | Add ~40 new translation keys |
+| `views/auth/login.php` | Enhanced with email/phone/username tabs (Alpine.js), remember me checkbox, forgot password link, rate limit warning |
+| `views/auth/register.php` | Enhanced with shop name field, user status = pending |
+| `views/layouts/auth.php` | Add forgot password link, remember me checkbox |
+| `views/layouts/main.php` | Add admin nav items for super admin |
+| `views/components/sidebar.php` | Add admin nav items conditionally based on role |
+
+### Routes to Add
+
+```php
+// Auth
+$router->get('/forgot-password', 'AuthController@forgotPasswordForm');
+$router->post('/forgot-password', 'AuthController@forgotPassword');
+$router->get('/reset-password/{token}', 'AuthController@resetPasswordForm');
+$router->post('/reset-password', 'AuthController@resetPassword');
+$router->post('/send-otp', 'AuthController@sendOtp');
+
+// Profile
+$router->get('/profile', 'ProfileController@index');
+$router->post('/profile', 'ProfileController@update');
+$router->post('/profile/password', 'ProfileController@changePassword');
+$router->post('/profile/sessions/terminate', 'ProfileController@terminateSession');
+$router->post('/profile/sessions/terminate-all', 'ProfileController@terminateAllSessions');
+
+// Admin (Super Admin)
+$router->group(['prefix' => 'admin', 'middleware' => ['auth', 'superAdmin']], function($router) {
+    $router->get('/users', 'AdminController@users');
+    $router->get('/users/{id}', 'AdminController@userDetail');
+    $router->post('/users/{id}/toggle-status', 'AdminController@toggleStatus');
+    $router->post('/users/{id}/change-role', 'AdminController@changeRole');
+    $router->post('/users/{id}/reset-password', 'AdminController@resetPassword');
+    $router->get('/permissions', 'AdminController@permissions');
+    $router->post('/permissions/update', 'AdminController@updatePermissions');
+    $router->get('/audit-logs', 'AdminController@auditLogs');
+});
+
+// Staff management (shop owner)
+$router->group(['prefix' => 'staff', 'middleware' => ['auth', 'shopScope']], function($router) {
+    $router->get('/', 'StaffController@index');
+    $router->get('/invite', 'StaffController@inviteForm');
+    $router->post('/invite', 'StaffController@invite');
+    $router->post('/{id}/remove', 'StaffController@remove');
+    $router->post('/{id}/role', 'StaffController@changeRole');
+    $router->get('/permissions', 'StaffController@permissions');
+    $router->post('/permissions/update', 'StaffController@updatePermissions');
+});
+
+// Profile
+$router->get('/profile', 'ProfileController@index');
+$router->post('/profile', 'ProfileController@update');
+$router->post('/profile/password', 'ProfileController@changePassword');
+$router->post('/profile/sessions/terminate', 'ProfileController@terminateSession');
+$router->post('/profile/sessions/terminate-all', 'ProfileController@terminateAllSessions');
+```
+
+### Key Design Decisions
+
+1. **Rate Limiting** — `RateLimiter` uses MySQL `failed_logins` table (consistent with MySQL-first approach). Configurable: 5 attempts, 15-min lockout (from `settings` table defaults).
+
+2. **Super Admin** — New `super_admin` role in `shop_user.role` ENUM. Super admins are platform-level, not scoped to a shop. They see an admin sidebar with platform management links. The `Middleware::superAdmin()` checks `AuthContext::isSuperAdmin()`.
+
+3. **Login Flexibility** — The login form uses Alpine.js tabs for email/phone/username. The controller detects the input type and queries the appropriate field.
+
+4. **OTP System** — `OtpManager` generates 6-digit codes, stores in `login_tokens` table with 5-min expiry. Sends via `Mailer` (abstract — SMS provider can be plugged in later). Tracks attempts in `otp_attempts` table (max 3 attempts, then 15-min lock).
+
+5. **Remember Me** — Persistent cookie with a random token stored in `login_tokens` table (30-day expiry). On login with "remember me" checked, a cookie is set. On session expiry, the cookie is checked and user is auto-logged-in.
+
+6. **Permission Middleware** — `requirePermission('users.create')` pattern already exists in `Middleware::permission()`. Enhanced with `requireRole('super_admin')` and `requireAnyPermission([...])`.
+
+### Testing Plan
+
+| Test | What to verify |
+|------|---------------|
+| Login success | Email/phone/username login with correct password redirects to dashboard |
+| Wrong password | Returns error flash, increments failed login counter |
+| Locked account | After 5 failed attempts, account locked for 15 min |
+| CSRF failure | POST without valid CSRF token returns 419 or redirects |
+| Permission denied | User without permission gets 403/redirect |
+| Shop isolation | User in Shop A cannot access Shop B data |
+| Role-based dashboard | Owner sees all, operator sees limited, customer sees own |
+| OTP verify | Valid OTP logs in, invalid OTP shows error, max 3 attempts locks |
+| Forgot password | Email sends reset link, token expires after use |
+| Super admin | Can view all users, activate/deactivate, change roles |
+| Staff invite | Shop owner can invite, assign role, remove staff |
+| Profile page | User can view/edit profile, change password, manage sessions |

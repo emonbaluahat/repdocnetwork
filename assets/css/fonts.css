@@ -1,0 +1,24 @@
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+}
+
+@font-face {
+    font-family: 'Noto Sans Bengali';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap');
+    unicode-range: U+0980-09FF, U+200C-200D, U+20B9, U+25CC;
+}
+
+.font-bengali {
+    font-family: 'Noto Sans Bengali', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.font-english {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}

@@ -1,0 +1,200 @@
+# Phase 3 — Core Business Workspace
+
+## Goal
+Build the working productivity suite that computer shop operators use daily — CRM, Document Engine, Dashboard, Reports, and Shop Settings.
+
+---
+
+## 1. Objectives
+
+| Objective | Deliverable |
+|-----------|-------------|
+| Customer CRM | Full CRUD, search, import/export, timeline |
+| Document Engine | Document generation by type + PDF output + management |
+| Shop Dashboard | Live stats, recent activity, quick action buttons |
+| Shop Settings | Profile editor, business hours, logo upload |
+| Reports | Daily/operator/customer/document reports |
+
+---
+
+## 2. Database Changes (5 new tables + 1 alter)
+
+| # | Table | Purpose |
+|---|-------|---------|
+| 016 | `customers` | Shop-scoped customer records |
+| 017 | `customer_timeline` | Activity log per customer |
+| 018 | `documents` | Generated documents |
+| 019 | `document_history` | Document lifecycle audit |
+| 020 | `shop_settings` | Key-value shop config |
+| 021 | Alter `shops` | Add logo, business_hours, verified_at |
+
+---
+
+## 3. New Migrations
+
+| # | File | Description |
+|---|------|-------------|
+| 016 | `create_customers` | customers table with indexes |
+| 017 | `create_customer_timeline` | timeline events per customer |
+| 018 | `create_documents` | generated documents |
+| 019 | `create_document_history` | document audit trail |
+| 020 | `create_shop_settings` | key-value shop config |
+| 021 | `add_shop_columns` | logo, business_hours, verified_at on shops |
+
+---
+
+## 4. New Models (5)
+
+| Model | Extends | Key Methods |
+|-------|---------|-------------|
+| `Customer` | Model (tenantAware: shop_id) | CRUD, searchByName/Phone/NID, findByShop, paginate, importCSV, exportCSV |
+| `CustomerTimeline` | Model (tenantAware: shop_id) | log, getByCustomer, getByShop |
+| `Document` | Model (tenantAware: shop_id) | findByReference, findByCustomer, findByType, generatePDF, void, regenerate |
+| `DocumentHistory` | Model (tenantAware: shop_id) | log, getByDocument |
+| `ShopSetting` | Model | get, set, getAll |
+
+---
+
+## 5. New Controllers (4)
+
+| Controller | Methods |
+|-----------|---------|
+| `CustomerController` | index, create, store, show, edit, update, destroy, search, import, export, timeline |
+| `DocumentController` | index, create, store, show, download, void, regenerate, history |
+| `ReportController` | daily, customers, documents, operators, export |
+| `ShopController` | settings, updateSettings, updateLogo, updateHours, switchShop |
+
+Enhanced: `DashboardController` — real stats queries.
+
+---
+
+## 6. New Views (15+)
+
+**Customers:** list.php, form.php, detail.php, import.php
+**Documents:** create.php, list.php, detail.php, print.php
+**Reports:** daily.php, customers.php, documents.php, operators.php
+**Settings:** shop.php
+**Dashboard:** Enhanced index.php with real data
+
+**Components:** stat-card.php, empty-state.php, timeline.php, command-palette.php, pagination.php
+
+---
+
+## 7. Routes
+
+```php
+// Customers
+$router->group(['prefix' => 'customers', 'middleware' => ['auth', 'shopScope', 'csrf']], function($router) {
+    $router->get('/', 'CustomerController@index');
+    $router->get('/create', 'CustomerController@create');
+    $router->post('/', 'CustomerController@store');
+    $router->get('/{id}', 'CustomerController@show');
+    $router->get('/{id}/edit', 'CustomerController@edit');
+    $router->post('/{id}', 'CustomerController@update');
+    $router->post('/{id}/delete', 'CustomerController@destroy');
+    $router->get('/{id}/timeline', 'CustomerController@timeline');
+    $router->post('/import', 'CustomerController@import');
+    $router->get('/export', 'CustomerController@export');
+    $router->get('/search', 'CustomerController@search');
+});
+
+// Documents
+$router->group(['prefix' => 'documents', 'middleware' => ['auth', 'shopScope', 'csrf']], function($router) {
+    $router->get('/', 'DocumentController@index');
+    $router->get('/create', 'DocumentController@create');
+    $router->get('/create/{customer_id}', 'DocumentController@create');
+    $router->post('/', 'DocumentController@store');
+    $router->get('/{id}', 'DocumentController@show');
+    $router->get('/{id}/download', 'DocumentController@download');
+    $router->post('/{id}/void', 'DocumentController@void');
+    $router->post('/{id}/regenerate', 'DocumentController@regenerate');
+    $router->get('/{id}/history', 'DocumentController@history');
+});
+
+// Reports
+$router->group(['prefix' => 'reports', 'middleware' => ['auth', 'shopScope']], function($router) {
+    $router->get('/', 'ReportController@index');
+    $router->get('/daily', 'ReportController@daily');
+    $router->get('/customers', 'ReportController@customers');
+    $router->get('/documents', 'ReportController@documents');
+    $router->get('/operators', 'ReportController@operators');
+    $router->get('/export/{type}', 'ReportController@export');
+});
+
+// Settings
+$router->group(['prefix' => 'settings', 'middleware' => ['auth', 'shopScope', 'csrf']], function($router) {
+    $router->get('/', 'ShopController@settings');
+    $router->post('/', 'ShopController@updateSettings');
+    $router->post('/logo', 'ShopController@updateLogo');
+    $router->post('/hours', 'ShopController@updateHours');
+});
+
+$router->get('/shop/switch/{id}', 'ShopController@switchShop');
+```
+
+---
+
+## 8. Permissions (new constants)
+
+| Constant | Module |
+|----------|--------|
+| `PERMISSION_IMPORT_CUSTOMERS` | customers |
+| `PERMISSION_EXPORT_CUSTOMERS` | customers |
+| `PERMISSION_VIEW_REPORTS` | reports |
+| `PERMISSION_EXPORT_REPORTS` | reports |
+| `PERMISSION_MANAGE_SHOP_SETTINGS` | settings |
+
+---
+
+## 9. Tenant Isolation
+
+All customer/document queries scoped by `shop_id` via `$tenantAware = true`. File storage: `/storage/shops/{shop_id}/documents/{year}/{month}/`.
+
+---
+
+## 10. Development Sequence
+
+```
+Week 1: Database + Customers CRM
+  - Migrations 016-017 (customers, customer_timeline)
+  - Customer model + CustomerTimeline model
+  - CustomerController (full CRUD + search + import/export)
+  - Customer views (list, form, detail, import)
+  - empty-state + pagination components
+
+Week 2: Document Engine + Dashboard
+  - Migrations 018-019 (documents, document_history)
+  - Install dompdf/mPDF
+  - Document model + DocumentHistory model
+  - DocumentController (create, list, download, void)
+  - Document views (create with type selector + PDF preview)
+  - Enhanced DashboardController with real stats queries
+  - stat-card + timeline components
+
+Week 3: Reports + Settings + Polish
+  - Migration 020 (shop_settings), 021 (shop columns)
+  - ReportController + 4 report views + export
+  - ShopController + settings views
+  - Command palette component
+  - Fix validation error display on auth layout
+  - Add CSRF middleware to all POST routes
+  - Full integration testing
+```
+
+---
+
+## 11. Testing Checklist
+
+| Test | What to Verify |
+|------|---------------|
+| Customer CRUD | Create, read, update, delete works per shop |
+| Customer search | Search by name/phone/NID returns correct results |
+| CSV import | Valid data imports, duplicates flagged |
+| Document generation | Select type + customer, fill fields, generate PDF |
+| PDF output | File exists, correct text, Bangla renders properly |
+| Document void | Status changes, no longer downloadable |
+| Dashboard stats | Counts match actual data, null states handled |
+| Reports | Numbers match manual calculation, export works |
+| Settings update | Profile, logo, hours save and persist |
+| Shop isolation | Shop A cannot see Shop B's customers/docs |
+| Permission check | Operator cannot delete customers, owner can |

@@ -1,0 +1,28 @@
+# Environment
+.env
+
+# Dependencies
+vendor/
+node_modules/
+
+# Build output
+assets/css/style.css
+
+# Storage
+storage/cache/*
+!storage/cache/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

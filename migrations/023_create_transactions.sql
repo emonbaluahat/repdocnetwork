@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS `transactions` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT,
+    `shop_id` BIGINT UNSIGNED NOT NULL,
+    `order_id` BIGINT UNSIGNED NULL,
+    `customer_id` BIGINT UNSIGNED NULL,
+    `reference` VARCHAR(32) NOT NULL,
+    `type` ENUM('payment','refund','adjustment') NOT NULL DEFAULT 'payment',
+    `method` ENUM('cash','bkash','nagad','rocket','bank','card','other') NOT NULL DEFAULT 'cash',
+    `amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    `status` ENUM('pending','completed','failed','refunded') NOT NULL DEFAULT 'completed',
+    `notes` TEXT NULL,
+    `processed_by` BIGINT UNSIGNED NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `transactions_shop_id_idx` (`shop_id`),
+    KEY `transactions_order_id_idx` (`order_id`),
+    KEY `transactions_customer_id_idx` (`customer_id`),
+    KEY `transactions_type_idx` (`type`),
+    KEY `transactions_method_idx` (`method`),
+    KEY `transactions_created_at_idx` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

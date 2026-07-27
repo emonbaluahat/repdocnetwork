@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+        @apply font-sans;
+    }
+
+    .font-bengali {
+        font-family: 'Noto Sans Bengali', 'Inter', system-ui, sans-serif;
+    }
+
+    ::selection {
+        @apply bg-primary-200 dark:bg-primary-800 text-primary-900 dark:text-primary-100;
+    }
+
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-primary-500;
+    }
+}
+
+@layer components {
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition duration-100 ease-out cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+
+    .btn-primary {
+        @apply btn bg-primary-700 dark:bg-primary-600 text-white hover:bg-primary-800 dark:hover:bg-primary-700 active:scale-[0.97];
+    }
+
+    .btn-secondary {
+        @apply btn bg-transparent text-text-primary dark:text-text-dark-primary border border-border dark:border-border-dark hover:bg-gray-50 dark:hover:bg-gray-800;
+    }
+
+    .btn-ghost {
+        @apply btn bg-transparent text-text-primary dark:text-text-dark-primary hover:bg-gray-100 dark:hover:bg-gray-800;
+    }
+
+    .btn-danger {
+        @apply btn bg-error-600 text-white hover:bg-error-700 active:scale-[0.97];
+    }
+
+    .btn-success {
+        @apply btn bg-success-600 text-white hover:bg-success-700 active:scale-[0.97];
+    }
+
+    .btn-sm {
+        @apply px-3 py-1.5 text-xs;
+    }
+
+    .btn-lg {
+        @apply px-6 py-3 text-base;
+    }
+
+    .input {
+        @apply w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-white dark:bg-card text-text-primary dark:text-text-dark-primary placeholder-text-tertiary focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition text-sm;
+    }
+
+    .input-error {
+        @apply border-error-500 focus:ring-error-500 focus:border-error-500 bg-error-50 dark:bg-error-700/10;
+    }
+
+    .label {
+        @apply block text-sm font-medium text-text-primary dark:text-text-dark-primary mb-1;
+    }
+
+    .card {
+        @apply bg-white dark:bg-card border border-border dark:border-border-dark rounded-xl;
+    }
+
+    .card-interactive {
+        @apply card hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-sm transition cursor-pointer;
+    }
+
+    .badge {
+        @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    }
+
+    .badge-success {
+        @apply badge bg-success-100 dark:bg-success-700/20 text-success-700 dark:text-success-400;
+    }
+
+    .badge-warning {
+        @apply badge bg-warning-100 dark:bg-warning-700/20 text-warning-700 dark:text-warning-400;
+    }
+
+    .badge-error {
+        @apply badge bg-error-100 dark:bg-error-700/20 text-error-700 dark:text-error-400;
+    }
+
+    .badge-info {
+        @apply badge bg-info-100 dark:bg-info-700/20 text-info-700 dark:text-info-400;
+    }
+
+    .badge-primary {
+        @apply badge bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400;
+    }
+}
+
+@layer utilities {
+    .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: #E5E7EB transparent;
+    }
+
+    .dark .scrollbar-thin {
+        scrollbar-color: #2C2C30 transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        @apply bg-gray-200 dark:bg-gray-700 rounded-full;
+    }
+}
