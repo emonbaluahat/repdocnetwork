@@ -1,11 +1,6 @@
-# Environment
-.env
-
 # Dependencies
+vendor/
 node_modules/
-
-# Build output
-assets/css/style.css
 
 # Storage
 storage/cache/*
