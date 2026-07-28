@@ -124,3 +124,56 @@ $router->group(['prefix' => 'transactions', 'middleware' => ['auth', 'shopScope'
     $router->post('/{id}/refund', 'TransactionController@refund');
     $router->get('/report', 'TransactionController@report');
 });
+
+// Public certificate verification (no auth required)
+$router->get('/verify/{code}', 'VerificationController@verify');
+
+// Document Templates (auth + shopScope)
+$router->group(['prefix' => 'templates', 'middleware' => ['auth', 'shopScope', 'csrf']], function ($router) {
+    $router->get('', 'TemplateController@index');
+    $router->get('/create', 'TemplateController@create');
+    $router->post('', 'TemplateController@store');
+    $router->get('/{id}/edit', 'TemplateController@edit');
+    $router->post('/{id}', 'TemplateController@update');
+    $router->post('/{id}/delete', 'TemplateController@destroy');
+    $router->post('/{id}/duplicate', 'TemplateController@duplicate');
+    $router->post('/{id}/toggle-status', 'TemplateController@toggleStatus');
+    $router->get('/{id}/preview', 'TemplateController@preview');
+});
+
+// Documents (auth + shopScope)
+$router->group(['prefix' => 'documents', 'middleware' => ['auth', 'shopScope', 'csrf']], function ($router) {
+    $router->get('', 'DocumentController@index');
+    $router->get('/create', 'DocumentController@create');
+    $router->post('', 'DocumentController@store');
+    $router->get('/{id}', 'DocumentController@show');
+    $router->get('/{id}/preview', 'DocumentController@preview');
+    $router->get('/{id}/pdf', 'DocumentController@pdf');
+    $router->get('/{id}/print', 'DocumentController@print');
+    $router->post('/{id}/delete', 'DocumentController@destroy');
+});
+
+// Certificates (auth + shopScope)
+$router->group(['prefix' => 'certificates', 'middleware' => ['auth', 'shopScope', 'csrf']], function ($router) {
+    $router->get('', 'CertificateController@index');
+    $router->post('/types', 'CertificateController@storeType');
+    $router->post('/types/{id}', 'CertificateController@updateType');
+    $router->post('/types/{id}/delete', 'CertificateController@destroyType');
+    $router->get('/types/{typeId}/fields', 'CertificateController@fields');
+    $router->post('/types/{typeId}/fields', 'CertificateController@storeField');
+    $router->post('/fields/{id}', 'CertificateController@updateField');
+    $router->post('/fields/{id}/delete', 'CertificateController@destroyField');
+    $router->get('/requests', 'CertificateController@requests');
+    $router->get('/requests/create', 'CertificateController@createRequest');
+    $router->post('/requests', 'CertificateController@storeRequest');
+    $router->get('/requests/{id}', 'CertificateController@showRequest');
+    $router->post('/requests/{id}/status', 'CertificateController@updateStatus');
+    $router->get('/requests/{id}/generate', 'CertificateController@generate');
+});
+
+// Files (auth + shopScope)
+$router->group(['prefix' => 'files', 'middleware' => ['auth', 'shopScope', 'csrf']], function ($router) {
+    $router->post('/upload', 'FileController@upload');
+    $router->get('/{id}/download', 'FileController@download');
+    $router->post('/{id}/delete', 'FileController@destroy');
+});

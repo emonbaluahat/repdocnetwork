@@ -6,7 +6,9 @@ $navItems = [
     ['label' => 'ড্যাশবোর্ড', 'icon' => 'LayoutDashboard', 'route' => '/', 'shortcut' => '⌘1'],
     ['label' => 'গ্রাহক', 'icon' => 'Users', 'route' => '/customers', 'shortcut' => '⌘2'],
     ['label' => 'অর্ডার', 'icon' => 'ShoppingCart', 'route' => '/orders', 'shortcut' => '⌘3'],
-    ['label' => 'সেটিংস', 'icon' => 'Settings', 'route' => '/settings', 'shortcut' => '⌘4'],
+    ['label' => 'ডকুমেন্ট', 'icon' => 'FileText', 'route' => '/documents', 'shortcut' => '⌘4'],
+    ['label' => 'টেমপ্লেট', 'icon' => 'File', 'route' => '/templates', 'shortcut' => '⌘5'],
+    ['label' => 'সেটিংস', 'icon' => 'Settings', 'route' => '/settings', 'shortcut' => '⌘6'],
 ];
 
 $adminItems = [];

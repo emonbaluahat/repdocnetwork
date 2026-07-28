@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', dirname(__DIR__));
+}
+
 define('APP_NAME', env('APP_NAME', 'RepDocNetwork'));
 define('APP_URL', env('APP_URL', 'http://localhost:8000'));
 define('APP_ENV', env('APP_ENV', 'production'));
